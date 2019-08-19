@@ -1,5 +1,3 @@
-########### used until 6/1/2019 ##########
-
 import numpy as np
 import sys, os, random, itertools, warnings, math
 import matplotlib.pyplot as plt
@@ -20,34 +18,6 @@ from scipy.spatial.qhull import QhullError
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 
-def getnbands(atoms, f):
-    file = open('/home/katsuyut/module/zval.txt', 'r')
-    combs = file.read().split('\n')
-    electrondict = {}
-    for comb in combs:
-        kye = comb.split('\t')[0]
-        val = comb.split('\t')[1]
-        electrondict[kye] = float(val)
-        
-    species = set(atoms.symbols)
-
-    speciesdict = {}
-    for i in species:
-        bools = (i == atoms.symbols)
-        speciesdict[i] = list(bools).count(True)
-    
-    keys = speciesdict.keys()
-    vals = speciesdict.values()    
-    
-    nelectrons = 0
-    for key in keys:
-        nelectrons += speciesdict[key]*electrondict[key]
-
-    nbands = int(nelectrons/2 + len(atoms)*f)
-    
-    return nbands
-
-        
 def query(name, env='spacom'):
     path = '/home/katsuyut/database/' + name
     try:
@@ -89,98 +59,51 @@ def getallene():
                     print('No energy')
                 
 
-def getmoleculeenergy(atoms, name, env):
-    nb = getnbands(atoms, 2)
-    calcmol = Vasp(
-            xc = 'PBE',
-            gga = 'RP',
-            ncore = 4,
-            encut = 500,
-            nsw = 200,
-            ibrion = 2,
-            isif = 2,
-            ismear = 1,
-            sigma = 0.4,
-            nbands = nb,
-            lcharg = False,
-            lwave = False,
-            )
-    
-    trajpath = '/home/katsuyut/database/' + str(name) + '.traj'
-#    trajpath_ = '/home/katsuyut/database/' + str(name) + '_.traj'
-    trajpath_all = '/home/katsuyut/database/' + str(name) + '_all.traj'
-
-    if env == 'local':
-        atoms.set_calculator(EMT())
+def getnbands(atoms, f=0.5):
+    file = open('/home/katsuyut/module/zval.txt', 'r')
+    combs = file.read().split('\n')
+    electrondict = {}
+    for comb in combs:
+        kye = comb.split('\t')[0]
+        val = comb.split('\t')[1]
+        electrondict[kye] = float(val)
         
-        dyn = QuasiNewton(atoms, trajectory=trajpath)
-        dyn.run(fmax=0.05)
-    elif env == 'spacom':
-        atoms.set_calculator(calcmol)
+    species = set(atoms.symbols)
+
+    speciesdict = {}
+    for i in species:
+        bools = (i == atoms.symbols)
+        speciesdict[i] = list(bools).count(True)
     
-    try:
-        e_eqmol = atoms.get_potential_energy()
-        atoms.write(trajpath)
-    except:
-        print('Error while calculating molecue energy!')    
-
-    if env == 'spacom':
-        atomslist = []
-        for atoms in read('vasprun.xml', ':'):
-            catoms = atoms.copy()
-            catoms = catoms[calcmol.resort]
-            catoms.set_calculator(SPC(catoms,
-                                      energy=atoms.get_potential_energy(),
-                                      forces=atoms.get_forces()[calcmol.resort]))
-            atomslist += [catoms]
-
-#        # Get the final trajectory
-#        finalimage = atoms
-
-        # Write a traj file for the optimization
-        tj = TrajectoryWriter(trajpath_all, 'a')
-        for atoms in atomslist:
-            print('writing trajectory file!')
-            print(atoms)
-            tj.write(atoms)
-        tj.close()
-
-#        # Write the final structure
-#        finalimage.write(trajpath_)
+    keys = speciesdict.keys()
+    vals = speciesdict.values()    
     
-    return e_eqmol
+    nelectrons = 0
+    for key in keys:
+        nelectrons += speciesdict[key]*electrondict[key]
+
+    nbands = int(nelectrons/2 + len(atoms)*f)
+    
+    return nbands
+
+
+def getkpts(atoms):
+    cell = atoms.get_cell()
+    x = np.sqrt(np.square(cell[0][0]) + np.square(cell[0][1]) + np.square(cell[0][2]))
+    y = np.sqrt(np.square(cell[1][0]) + np.square(cell[1][1]) + np.square(cell[1][2]))
+    z = np.sqrt(np.square(cell[2][0]) + np.square(cell[2][1]) + np.square(cell[2][2]))
+    kpts1 = int(30/x)
+    kpts2 = int(30/y)
+    kpts3 = int(30/z)
+    
+    return [kpts1, kpts2, kpts3]
                     
 
-def getslabenergy(atoms, name, cell, depth, env):
-    cell=atoms.get_cell()
-    x=np.sqrt(np.square(cell[0][0])+np.square(cell[0][1])+np.square(cell[0][2]))
-    y=np.sqrt(np.square(cell[1][0])+np.square(cell[1][1])+np.square(cell[1][2]))
-    z=np.sqrt(np.square(cell[2][0])+np.square(cell[2][1])+np.square(cell[2][2]))
-    kpts1=int(30/x)
-    kpts2=int(30/y)
-    kpts3=int(30/z)
+def getenergy(atoms, name, vaspset, env):
+    calc = vaspset
     
-    nb = getnbands(atoms, 2)
-
-    calcslab = Vasp(
-                xc = 'PBE',
-                gga = 'RP',
-                ncore = 4,
-                encut = 500,
-                nsw = 200,
-                kpts = [kpts1, kpts2, kpts3],
-                ibrion = 2,
-                isif = 2,
-                ismear = 1,
-                sigma = 0.4,
-                nbands = nb,
-                lcharg = False,
-                lwave = False,
-                )
-    
-    trajpath = '/home/katsuyut/database/' + str(name) + '.traj'
-#    trajpath_ = '/home/katsuyut/database/' + str(name) + '_.traj'
-    trajpath_all = '/home/katsuyut/database/' + str(name) + '_all.traj'
+    trajpath = '/home/katsuyut/database/' + str(name) + '.traj'         
+    trajpath_all = '/home/katsuyut/database/' + str(name) + '_all.traj' 
 
     if env == 'local':
         atoms.set_calculator(EMT())
@@ -188,11 +111,7 @@ def getslabenergy(atoms, name, cell, depth, env):
         dyn = QuasiNewton(atoms, trajectory=trajpath)
         dyn.run(fmax=0.05)
     elif env == 'spacom':
-        atoms.set_calculator(calcslab)
-
-    constraint = FixAtoms(mask=[atom.tag >= depth for atom in atoms])
-    atoms.set_constraint(constraint)
-        
+        atoms.set_calculator(calc)
     
     try:
         e_atoms = atoms.get_potential_energy()
@@ -205,14 +124,11 @@ def getslabenergy(atoms, name, cell, depth, env):
         atomslist = []
         for atoms in read('vasprun.xml', ':'):
             catoms = atoms.copy()
-            catoms = catoms[calcslab.resort]
+            catoms = catoms[calc.resort]
             catoms.set_calculator(SPC(catoms,
                                       energy=atoms.get_potential_energy(),
-                                      forces=atoms.get_forces()[calcslab.resort]))
+                                      forces=atoms.get_forces()[calc.resort]))
             atomslist += [catoms]
-
-#        # Get the final trajectory
-#        finalimage = atoms
 
         # Write a traj file for the optimization
         tj = TrajectoryWriter(trajpath_all, 'a')
@@ -222,51 +138,20 @@ def getslabenergy(atoms, name, cell, depth, env):
             tj.write(atoms)
         tj.close()
 
-#        # Write the final structure
-#        finalimage.write(trajpath_)
-    
     return e_atoms
 
 
-def getfccLC(surface, init, env='spacom'):
-    a = init # approximate lattice constant
-    b = a / 2
+def getLC(atoms, vaspset, env='spacom'):
     volumes = []
     energies = []
     cells = []
-    
-    atoms = Atoms(surface, 
-                  cell=[(0, b, b), (b, 0, b), (b, b, 0)],
-                  pbc=1)
+
     cell = atoms.get_cell()
     
     for x in np.linspace(0.95, 1.05, 5):
         atoms.set_cell(cell * x, scale_atoms=True)
 
-        x=np.sqrt(np.square(cell[0][0])+np.square(cell[0][1])+np.square(cell[0][2]))
-        y=np.sqrt(np.square(cell[1][0])+np.square(cell[1][1])+np.square(cell[1][2]))
-        z=np.sqrt(np.square(cell[2][0])+np.square(cell[2][1])+np.square(cell[2][2]))
-        kpts1=int(30/x)
-        kpts2=int(30/y)
-        kpts3=int(30/z)
-
-        nb = getnbands(atoms, 2)
-
-        calc = Vasp(
-                    xc = 'PBE',
-                    gga = 'RP',
-                    ncore = 4,
-                    encut = 500,
-                    nsw = 200,
-                    kpts = [kpts1, kpts2, kpts3],
-                    ibrion = 2,
-                    isif = 2,
-                    ismear = 1,
-                    sigma = 0.4,
-                    nbands = nb,
-                    lcharg = False,
-                    lwave = False,
-                    )
+        calc = vaspset
         
         if env == 'local':
             atoms.set_calculator(EMT())
@@ -283,7 +168,7 @@ def getfccLC(surface, init, env='spacom'):
             cells.append(atoms.get_cell())
 
         except:
-            print('Error while calculating molecue energy!')
+            print('Error while calculating bulk energy!')
             
     eos = EquationOfState(volumes, energies)
     v0, e0, B = eos.fit()
@@ -452,3 +337,4 @@ def getcalcatoms(atoms, molecule, h, calccomb):
     if type(calccomb) != int:
         for i in range(len(calccomb)):
             add_adsorbate(atoms, molecule, h, calccomb[i][:2])
+
