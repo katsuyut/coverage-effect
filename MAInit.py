@@ -183,7 +183,7 @@ def getcalcatoms(atoms, molecule, h, calccomb):
             add_adsorbate(atoms, molecule, h, calccomb[i][:2])
 
             
-def getNiGa110(a):
+def getNiGa(a):
     b = a * 2**0.5
     x = a/2
     y = b/2
@@ -199,17 +199,15 @@ def getNiGa110(a):
                        pbc=1
                        )
     
-    atoms = settag(atoms)
-                
     return atoms
 
 
 def settag(atoms):
-        poslis = list(set(atoms.get_positions()[:,2]))
+    poslis = list(set(atoms.get_positions()[:,2]))
     poslis.sort()
 
     for i in range(len(atoms)):
-        for j in range(4):
+        for j in range(len(poslis)):
             if atoms[i].position[2] == poslis[j]:
                 atoms[i].tag = len(poslis) - j
     return atoms

@@ -15,10 +15,6 @@ from ase.lattice.cubic import FaceCenteredCubic
 from ase.optimize import QuasiNewton
 from ase.visualize import view
 from scipy.spatial.qhull import QhullError
-from pymatgen.io.ase import AseAtomsAdaptor
-from pymatgen.analysis.adsorption import AdsorbateSiteFinder
-from pymatgen.util.coord import in_coord_list_pbc
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 
 def getnbands(atoms, f=0.5):
