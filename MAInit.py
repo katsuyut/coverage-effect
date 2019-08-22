@@ -1,23 +1,11 @@
 import numpy as np
 import sys, os, random, itertools, warnings, math, copy
-import matplotlib.pyplot as plt
 from ase import Atoms, Atom
 from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate
-from ase.calculators.emt import EMT
-from ase.calculators.vasp import Vasp, Vasp2
-from ase.calculators.singlepoint import SinglePointCalculator as SPC
 from ase.constraints import FixAtoms
-from ase.eos import EquationOfState
-from ase.geometry import find_mic
 from ase.io import read, write
-from ase.io.trajectory import Trajectory, TrajectoryWriter
-from ase.lattice.cubic import FaceCenteredCubic
-from ase.optimize import QuasiNewton
-from ase.visualize import view
-from scipy.spatial.qhull import QhullError
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
-from pymatgen.util.coord import in_coord_list_pbc
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 
@@ -202,6 +190,34 @@ def getNiGa(a):
     return atoms
 
 
+def getCoPt3(a):
+    x = a/2
+    y = a/2
+    z = a/2
+
+    pos = np.array([[0,0,0],[x,y,0],[0,y,z],[x,0,z]])
+
+    atoms = Atoms(symbols = 'CoPt3', # Ga2Ni2
+                       positions= pos,
+                       cell = np.array([[x*2,0,0],
+                                        [0,y*2,0],
+                                        [0,0,z*2]]),
+                       pbc=1
+                       )
+    
+    return atoms
+
+
+def make_surface_from_bulk(atoms, unitlength):
+    atoms.pbc[2] = False
+
+    atoms = atoms.repeat([unitlength, unitlength, 2])
+    atoms.center(vacuum=10, axis=2)
+
+    atoms = settag(atoms)
+    return atoms
+
+
 def settag(atoms):
     poslis = list(set(atoms.get_positions()[:,2]))
     poslis.sort()
@@ -211,3 +227,206 @@ def settag(atoms):
             if atoms[i].position[2] == poslis[j]:
                 atoms[i].tag = len(poslis) - j
     return atoms
+
+
+def modpos(sites):
+    modsites = []
+    for i in range(len(sites)):
+        modsite = []
+        for j in range(len(sites[i]) - 1):
+            if sites[i][j] < 0:
+                sites[i][j] += np.ceil(abs(sites[i][j]))
+            elif sites[i][j] >= 1:
+                sites[i][j] -= np.floor(sites[i][j])
+            
+            if abs(sites[i][j]) < 0.01 or abs(sites[i][j] - 1) < 0.01:
+                sites[i][j] = 0
+            modsite.append(sites[i][j])
+        modsite.append(sites[i][2])
+        modsites.append(modsite)
+    return modsites
+
+
+def checkifsame(bareatoms, sites, allused):
+    '''
+    Check if in allused has same configuration of symmetrical operated sites.
+    Return True if found.
+    '''
+    struct = AseAtomsAdaptor.get_structure(bareatoms)
+    surf_sg = SpacegroupAnalyzer(struct, 0.01)
+    symm_ops = surf_sg.get_symmetry_operations()
+
+    cpallused = copy.deepcopy(allused)
+    frcpallused = []
+    
+    for i in range(len(cpallused)):
+        tmp = []
+        frused = struct.lattice.get_fractional_coords(cpallused[i])
+        for j in range(len(frused)):
+            tmp.append(list(frused[j]))
+        frcpallused.append(modpos(tmp))
+
+    for op in symm_ops:
+        froperatedsites = []
+        for i in range(len(sites)):
+            frsites = struct.lattice.get_fractional_coords(sites[i])
+            froperatedsites.append(list(op.operate(frsites)))
+        froperatedsites.sort()
+        modfropsites = modpos(froperatedsites)
+        
+        for used in frcpallused:
+            if len(modfropsites) == len(used):
+                if np.allclose(sorted(modfropsites), sorted(used), atol=0.01):
+                    print('Symmetrically same structure found!')
+                    return True
+                
+                
+def getuniqueatoms(atoms, bareatoms, sites, maxmole, mindist, rused, group, molecule):
+    '''
+    Given surface Atom object and all possible attaching site positions, create all possible unique attached Atom object.
+    Can exclude by the maximum number of molecules or minimum distance. 
+    
+    return
+    allatoms   :all possible Atom object [[[x,y,z]], [[a,b,c]], [[x,y,z],[a,b,c]]]
+    allused    :attached sites for each Atom object
+    mindistlis :minimum distance of molecule for each Atom object
+    numdict    :dictionary, key=number of attached molecule, value=number of object created
+    '''
+    height = 1.85
+    allatoms = []
+    allused = []
+    molenum = []
+    usedsites = []
+    
+    for i in range(len(rused)):
+        tmp = []
+        tmp.append(rused[i])
+        allused.append(tmp)
+
+    initallused = copy.deepcopy(allused)
+    
+    def recursive(ratoms, rsites, rused, molecules, tmpused):
+        molecules += 1
+        if molecules > maxmole:
+            return None
+        
+        for i in range(len(rsites)):
+            nextatoms = copy.deepcopy(ratoms)
+            nextused = copy.deepcopy(rused)
+            if molecules == 1:
+                tmpused = copy.deepcopy(initallused)
+                print('Used initialized!')
+            
+            add_adsorbate(nextatoms, molecule, height, rsites[i][:2])
+            nextused.append(list(rsites[i]))
+            
+            dist = getmindist(nextused, bareatoms.cell)
+            if dist < mindist:
+                print('Distance {0:.2f} is below {1}'.format(dist, mindist))
+                continue
+
+            sameflag = checkifsame(bareatoms, nextused, tmpused)
+            if sameflag:
+                continue
+            
+            allatoms.append(nextatoms)
+            allused.append(nextused)
+            tmpused.append(nextused)
+            molenum.append(molecules)
+            struct = AseAtomsAdaptor.get_structure(nextatoms)
+            
+            print('{0}-------{1}-------'.format(molecules, nextatoms.symbols))
+            
+            try:
+                nextsites = AdsorbateSiteFinder(struct).symm_reduce(sites)
+                indexlist = []
+                for j in range(len(nextused)):
+                    for k in range(len(nextsites)):
+                        if np.allclose(nextused[j], nextsites[k]):
+                            indexlist.append(k)
+
+                for j in range(len(usedsites)):
+                    for k in range(len(nextsites)):
+                        if np.allclose(usedsites[j], nextsites[k]):
+                            indexlist.append(k)
+
+                indexlist.sort(reverse = True) 
+                for j in range(len(indexlist)):
+                    nextsites.pop(indexlist[j])
+                    
+                recursive(nextatoms, nextsites, nextused, molecules, tmpused)
+            
+            except:
+                print('Error!!')
+            
+            if molecules == 1:
+                for j in range(len(group)):
+                    if rsites[i] in group[j]:
+                        for k in range(len(group[j])):
+                            usedsites.append(group[j][k])
+
+    redsites_ = getadsites(atoms, True)['all']
+    redsites = [list(i) for i in redsites_]
+
+    recursive(atoms, redsites, rused, len(rused), initallused)
+    mindistlis = getmindistlist(allused, bareatoms.cell)
+    
+    numdict = {}
+    for site in allused:
+        if str(len(site)) not in numdict.keys():
+            numdict[str(len(site))] = 1
+        else:
+            numdict[str(len(site))] += 1
+    
+    return allatoms, allused, mindistlis, numdict, molenum
+
+
+def removemolecule(atoms, molecule):
+    cpatoms = copy.deepcopy(atoms)
+    poslis = []
+    for i in reversed(range(len(cpatoms))):
+        if cpatoms[i].symbol == molecule[0]:
+            poslis.append(cpatoms[i].position[:2])
+
+        for j in molecule:
+            if cpatoms[i].symbol == j:
+                cpatoms.pop(i)
+                print(cpatoms.symbols)
+                break
+    return cpatoms, poslis
+
+
+def creategroup(bareatoms, sites):
+    barestruct = AseAtomsAdaptor.get_structure(bareatoms)
+    baresites = getadsites(bareatoms, True)
+    redsites_ = baresites['all']
+    redsites = [list(i) for i in redsites_]
+
+    unique = []
+    for i in range(len(redsites)):
+        tmp = []
+        tmp.append(redsites[i])
+        unique.append(tmp)
+    
+    group = copy.deepcopy(unique)
+    num = 0
+    for i in range(len(sites)):
+        tmp = []
+        tmp.append(sites[i])
+
+        flag = 0
+        for j in range(len(unique)):
+            if np.allclose(tmp, unique[j]):
+                flag = 1
+        if flag == 1:
+            continue
+
+        for j in range(len(unique)):
+            tmp2 = []
+            tmp2.append(unique[j])
+            if checkifsame(bareatoms, tmp, tmp2):
+                print(j, 'same config found!')
+                group[j].append(sites[i])
+                break
+
+    return group

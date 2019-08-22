@@ -2,19 +2,9 @@ import numpy as np
 import sys, os, random, itertools, warnings, math, copy
 import matplotlib.pyplot as plt
 from ase import Atoms, Atom
-from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate
-from ase.calculators.emt import EMT
-from ase.calculators.vasp import Vasp, Vasp2
-from ase.calculators.singlepoint import SinglePointCalculator as SPC
-from ase.constraints import FixAtoms
-from ase.eos import EquationOfState
-from ase.geometry import find_mic
 from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
-from ase.lattice.cubic import FaceCenteredCubic
-from ase.optimize import QuasiNewton
 from ase.visualize import view
-from scipy.spatial.qhull import QhullError
 
 
 def query(name, env='spacom'):
