@@ -386,12 +386,12 @@ def removemolecule(atoms, molecule):
     poslis = []
     for i in reversed(range(len(cpatoms))):
         if cpatoms[i].symbol == molecule[0]:
-            poslis.append(cpatoms[i].position[:2])
+            poslis.append(cpatoms[i].position)
 
         for j in molecule:
             if cpatoms[i].symbol == j:
                 cpatoms.pop(i)
-                print(cpatoms.symbols)
+#                 print(cpatoms.symbols)
                 break
     return cpatoms, poslis
 
@@ -425,7 +425,7 @@ def creategroup(bareatoms, sites):
             tmp2 = []
             tmp2.append(unique[j])
             if checkifsame(bareatoms, tmp, tmp2):
-                print(j, 'same config found!')
+#                 print(j, 'same config found!')
                 group[j].append(sites[i])
                 break
 
