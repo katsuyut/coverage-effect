@@ -245,6 +245,71 @@ def get_bonding_matrix(atoms):
     except (QhullError, ValueError):
         return None
     
+def get_modified_bonding_matrix(atoms):
+    '''
+    This function will fingerprint a slab+adsorbate atoms object for you.
+    It only  with multiple adsorbates.
+    Arg:
+        atoms   `ase.Atoms` object to fingerprint. The slab atoms must be
+                tagged with non-zero integers and adsorbate atoms must be
+                tagged with zero. This function also assumes that the
+                first atom in each adsorbate is the binding atom (e.g.,
+                of all atoms with tag==1, the first atom is the binding;
+                the same goes for tag==2 and tag==3 etc.).
+    Returns:
+        fingerprint A dictionary whose keys are:
+                        coordination            A string indicating the
+                                                first shell of
+                                                coordinated atoms
+                        neighborcoord           A list of strings
+                                                indicating the coordination
+                                                of each of the atoms in
+                                                the first shell of
+                                                coordinated atoms
+                        nextnearestcoordination A string identifying the
+                                                coordination of the
+                                                adsorbate when using a
+                                                loose tolerance for
+                                                identifying "neighbors"
+    '''
+    # Replace the adsorbate[s] with a single Krypton atom at the first binding
+    # site. We need the Krypton there so that pymatgen can find its
+    # coordination.  
+    atoms, binding_positions = removemolecule(atoms, 'CO')
+    nads = len(binding_positions)
+    for i in reversed(range(nads)):
+        atoms += Atoms('Kr', positions=[binding_positions[i]])
+    b_mat = np.zeros([len(atoms), len(atoms)])
+    Krypton_indexes = []
+    for atom in atoms:
+        if atom.symbol == 'Kr':
+            Krypton_indexes.append(atom.index)
+    struct = AseAtomsAdaptor.get_structure(atoms)
+    
+    try:
+        for atom in atoms:
+            # We have a standard and a loose Voronoi neighbor finder for various
+            # purposes
+            vnn = VoronoiNN(allow_pathological=True, tol=0.6, cutoff=10) # originally tol=0.8
+            vnn_loose = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
+
+            # Find the coordination
+            if atom.symbol == 'Kr':
+                nn_info = vnn.get_nn_info(struct, n=atom.index)
+                coordination, cindexes = __get_coordination_string_mod(nn_info)
+            else:
+                nn_info = vnn_loose.get_nn_info(struct, n=atom.index)
+                coordination, cindexes = __get_coordination_string_mod(nn_info)
+            for cindex in cindexes:
+                b_mat[atom.index][cindex] = 1/len(cindexes)
+                b_mat[cindex][atom.index] = 1/len(cindexes)
+            
+        return b_mat, nads
+        
+    # If we get some QHull or ValueError, then just assume that the adsorbate desorbed
+    except (QhullError, ValueError):
+        return None
+    
 def get_repeated_atoms(atoms, repeat):
     cpatoms = copy.deepcopy(atoms)
     for i in reversed(range(len(cpatoms))):
@@ -273,7 +338,7 @@ def get_number_matrix(b_mat, nads, repeat):
             if done[j] == 0:
                 if not (newb_matCO[j] == 0).all():
                     done[j] = 1
-                    nnearestbonding = int(np.max(np.sum(newb_matCO[j:nads:nads//repeat**2,:], axis=1)))
+                    nnearestbonding = np.max(np.sum(newb_matCO[j:nads:nads//repeat**2,:], axis=1))
 #                     print('adsorbate {} has {} nearest adsorbate at {}th neighbor'.format(j,nnearestbonding,i))
 #                     print(newb_matCO[j:nads:nads//repeat**2,:])
                     results.append([j,i,nnearestbonding])
