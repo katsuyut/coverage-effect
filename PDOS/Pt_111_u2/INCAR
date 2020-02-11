@@ -1,0 +1,14 @@
+INCAR created by Atomic Simulation Environment
+ ENCUT = 350.000000
+ EDIFFG = -3.00e-02
+ GGA = RP
+ IBRION = 2
+ ISYM = 0
+ ISIF = 0
+ NSW = 0
+ LORBIT = 0
+ NCORE = 4
+ RWIGS = 1.5000 
+ LCHARG = .FALSE.
+ LWAVE = .FALSE.
+ LREAL = Auto

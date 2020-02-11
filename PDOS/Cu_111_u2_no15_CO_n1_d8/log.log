@@ -1,0 +1,49 @@
+/home/zulissi/software/vasp/5.4.4_impi_cuda_patch0518_intel0818/bin/:/home/zulissi/software/vasp/5.4.4_impi_cuda_patch0518_intel0818/bin:/usr/local/cuda-9.0/samples-bin:/usr/local/cuda-9.0/bin:/opt/ohpc/pub/intel/intel18/compilers_and_libraries_2018.3.222/linux/mpi/intel64/bin_ohpc:/opt/ohpc/pub/intel/intel18/compilers_and_libraries_2018.3.222/linux/mpi/intel64/bin:/opt/ohpc/pub/intel/intel18/compilers_and_libraries_2018.3.222/linux/bin/intel64:/home/zulissi/GASpy_conda/bin:/opt/ohpc/pub/python/anaconda2/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/katsuyut/.local/bin:/home/katsuyut/bin:/home/katsuyut/.local/bin:/home/katsuyut/bin
+/tmp
+./run_vasp.py
+/home/katsuyut/5.4.4
+ running on   16 total cores
+ distrk:  each k-point on   16 cores,    1 groups
+ distr:  one band on    4 cores,    4 groups
+ using from now: INCAR     
+ vasp.5.4.4.18Apr17-6-g9f103f2a35 (build Aug 07 2018 15:16:41) complex          
+  
+ POSCAR found :  3 types and      18 ions
+ scaLAPACK will be used
+
+ ----------------------------------------------------------------------------- 
+|                                                                             |
+|  ADVICE TO THIS USER RUNNING 'VASP/VAMP'   (HEAR YOUR MASTER'S VOICE ...):  |
+|                                                                             |
+|      You enforced a specific xc-type in the INCAR file,                     |
+|      a different type was found on the POTCAR file                          |
+|          I HOPE YOU KNOW, WHAT YOU ARE  DOING                               |
+|                                                                             |
+ ----------------------------------------------------------------------------- 
+
+ LDA part: xc-table for Pade appr. of Perdew
+ POSCAR, INCAR and KPOINTS ok, starting setup
+ FFT: planning ...
+ WAVECAR not read
+ entering main loop
+       N       E                     dE             d eps       ncg     rms          rms(c)
+DAV:   1     0.162549096207E+04    0.16255E+04   -0.62907E+04  2912   0.150E+03
+DAV:   2     0.155752638122E+03   -0.14697E+04   -0.14186E+04  2912   0.392E+02
+DAV:   3    -0.516293167369E+02   -0.20738E+03   -0.19343E+03  3904   0.191E+02
+DAV:   4    -0.767342206766E+02   -0.25105E+02   -0.23411E+02  4552   0.676E+01
+DAV:   5    -0.780289553835E+02   -0.12947E+01   -0.12710E+01  4376   0.171E+01    0.320E+01
+DAV:   6    -0.759067038176E+02    0.21223E+01   -0.18464E+02  3416   0.147E+02    0.222E+01
+DAV:   7    -0.640460672114E+02    0.11861E+02   -0.50682E+01  3488   0.963E+01    0.682E+00
+DAV:   8    -0.641391810208E+02   -0.93114E-01   -0.18595E+01  4016   0.735E+01    0.487E+00
+DAV:   9    -0.638161409928E+02    0.32304E+00   -0.87445E+00  4440   0.476E+01    0.264E+00
+DAV:  10    -0.638750864244E+02   -0.58945E-01   -0.29594E+00  3688   0.278E+01    0.267E+00
+DAV:  11    -0.638780171598E+02   -0.29307E-02   -0.10619E+00  3328   0.165E+01    0.170E+00
+DAV:  12    -0.638491044306E+02    0.28913E-01   -0.25889E-01  3848   0.828E+00    0.899E-01
+DAV:  13    -0.638401325509E+02    0.89719E-02   -0.10794E-01  3720   0.509E+00    0.386E-01
+DAV:  14    -0.638405288999E+02   -0.39635E-03   -0.52076E-02  3584   0.297E+00    0.244E-01
+DAV:  15    -0.638402616043E+02    0.26730E-03   -0.11986E-02  3600   0.210E+00    0.267E-01
+DAV:  16    -0.638384814064E+02    0.17802E-02   -0.53381E-03  3584   0.135E+00    0.114E-01
+DAV:  17    -0.638382114121E+02    0.26999E-03   -0.15655E-03  4152   0.499E-01    0.654E-02
+DAV:  18    -0.638382080609E+02    0.33512E-05   -0.67078E-04  3368   0.482E-01
+   1 F= -.63838208E+02 E0= -.63844372E+02  d E =0.184930E-01
+Cu_111_u2_no15_CO_n1_d8.traj, -63.8443724

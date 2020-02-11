@@ -1,0 +1,55 @@
+/home/zulissi/software/vasp/5.4.4_impi_cuda_patch0518_intel0818/bin/:/home/zulissi/software/vasp/5.4.4_impi_cuda_patch0518_intel0818/bin:/usr/local/cuda-9.0/samples-bin:/usr/local/cuda-9.0/bin:/opt/ohpc/pub/intel/intel18/compilers_and_libraries_2018.3.222/linux/mpi/intel64/bin_ohpc:/opt/ohpc/pub/intel/intel18/compilers_and_libraries_2018.3.222/linux/mpi/intel64/bin:/opt/ohpc/pub/intel/intel18/compilers_and_libraries_2018.3.222/linux/bin/intel64:/home/zulissi/GASpy_conda/bin:/opt/ohpc/pub/python/anaconda2/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/katsuyut/.local/bin:/home/katsuyut/bin:/home/katsuyut/.local/bin:/home/katsuyut/bin
+/tmp
+./run_vasp.py
+/home/katsuyut/5.4.4
+ running on   16 total cores
+ distrk:  each k-point on   16 cores,    1 groups
+ distr:  one band on    4 cores,    4 groups
+ using from now: INCAR     
+ vasp.5.4.4.18Apr17-6-g9f103f2a35 (build Aug 07 2018 15:16:41) complex          
+  
+ POSCAR found :  3 types and      18 ions
+ scaLAPACK will be used
+
+ ----------------------------------------------------------------------------- 
+|                                                                             |
+|  ADVICE TO THIS USER RUNNING 'VASP/VAMP'   (HEAR YOUR MASTER'S VOICE ...):  |
+|                                                                             |
+|      You enforced a specific xc-type in the INCAR file,                     |
+|      a different type was found on the POTCAR file                          |
+|          I HOPE YOU KNOW, WHAT YOU ARE  DOING                               |
+|                                                                             |
+ ----------------------------------------------------------------------------- 
+
+ LDA part: xc-table for Pade appr. of Perdew
+ POSCAR, INCAR and KPOINTS ok, starting setup
+ FFT: planning ...
+ WAVECAR not read
+ entering main loop
+       N       E                     dE             d eps       ncg     rms          rms(c)
+DAV:   1     0.162573438121E+04    0.16257E+04   -0.62900E+04  2912   0.150E+03
+DAV:   2     0.156435183117E+03   -0.14693E+04   -0.14178E+04  2912   0.391E+02
+DAV:   3    -0.510051926508E+02   -0.20744E+03   -0.19334E+03  3896   0.191E+02
+DAV:   4    -0.766340392314E+02   -0.25629E+02   -0.23985E+02  4528   0.681E+01
+DAV:   5    -0.779269928046E+02   -0.12930E+01   -0.12586E+01  4376   0.174E+01    0.319E+01
+DAV:   6    -0.756722679219E+02    0.22547E+01   -0.18329E+02  3448   0.146E+02    0.220E+01
+DAV:   7    -0.640177022711E+02    0.11655E+02   -0.50297E+01  3456   0.945E+01    0.655E+00
+DAV:   8    -0.641370099041E+02   -0.11931E+00   -0.17881E+01  4216   0.726E+01    0.485E+00
+DAV:   9    -0.638011618963E+02    0.33585E+00   -0.85096E+00  4552   0.470E+01    0.263E+00
+DAV:  10    -0.638544636038E+02   -0.53302E-01   -0.28088E+00  3712   0.270E+01    0.262E+00
+DAV:  11    -0.638551190974E+02   -0.65549E-03   -0.99686E-01  3328   0.159E+01    0.166E+00
+DAV:  12    -0.638284630200E+02    0.26656E-01   -0.24704E-01  3776   0.840E+00    0.918E-01
+DAV:  13    -0.638177560470E+02    0.10707E-01   -0.98358E-02  3840   0.534E+00    0.384E-01
+DAV:  14    -0.638182298290E+02   -0.47378E-03   -0.54119E-02  3592   0.303E+00    0.239E-01
+DAV:  15    -0.638184450424E+02   -0.21521E-03   -0.14171E-02  3528   0.206E+00    0.278E-01
+DAV:  16    -0.638164986625E+02    0.19464E-02   -0.55848E-03  3600   0.119E+00    0.110E-01
+DAV:  17    -0.638162815463E+02    0.21712E-03   -0.14910E-03  4336   0.508E-01    0.561E-02
+DAV:  18    -0.638164235694E+02   -0.14202E-03   -0.94204E-04  3304   0.459E-01    0.492E-02
+DAV:  19    -0.638165263290E+02   -0.10276E-03   -0.29417E-04  2480   0.277E-01    0.389E-02
+DAV:  20    -0.638167169820E+02   -0.19065E-03   -0.20740E-04  2088   0.243E-01    0.159E-02
+DAV:  21    -0.638168848062E+02   -0.16782E-03   -0.77351E-05  1968   0.106E-01    0.153E-02
+DAV:  22    -0.638170015448E+02   -0.11674E-03   -0.41333E-05  1952   0.960E-02    0.100E-02
+DAV:  23    -0.638171673850E+02   -0.16584E-03   -0.36971E-05  1920   0.785E-02    0.116E-02
+DAV:  24    -0.638172450134E+02   -0.77628E-04   -0.28261E-05  1944   0.784E-02
+   1 F= -.63817245E+02 E0= -.63824475E+02  d E =0.216890E-01
+Cu_111_u2_no20_CO_n1_d8.traj, -63.82447467
