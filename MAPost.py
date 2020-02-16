@@ -318,7 +318,7 @@ def get_repeated_atoms(atoms, repeat):
     cpatoms = cpatoms.repeat([repeat,repeat,1])
     return cpatoms
 
-def get_number_matrix(b_mat, nads, repeat):
+def get_old_number_matrix(b_mat, nads, repeat):
 #     b_matlis = []
 #     sumb_matlis = []
     newb_mat = copy.deepcopy(b_mat)
@@ -348,3 +348,41 @@ def get_number_matrix(b_mat, nads, repeat):
         if (done == 1).all() or i==6:
             break
     return np.array(results) # [adsorbate_index, distance, # of nearest adsorbate]
+
+def get_number_matrix(b_mat, nads, repeat):
+    '''
+    If you want to set maximum distance to 4, you need to set repeat=5.
+    If you want to set maximum distance to 3, you can set repeat=3.    
+    '''
+    if repeat != 3 and repeat != 5:
+        print('Repeat should be 3 or 5. If you want to set maximum distance to 4, set 5 for repeat. If you want to set maximum distance to 3, set 3 for repeat.')
+        return None
+    elif repeat == 3:
+        terminate = 4
+    else:
+        terminate = 5
+    
+    newb_mat = copy.deepcopy(b_mat)
+    done = np.zeros([nads//repeat**2])
+    results = []
+    i = 2
+    mask = np.ones(np.shape(newb_mat[nads//repeat**2*(math.floor(repeat**2/2.0)):nads//repeat**2*(math.ceil(repeat**2/2.0)),-nads:]))
+    while True:
+        newb_mat = newb_mat @ b_mat
+        newb_matCO = (newb_mat - np.diag(np.diag(newb_mat)))[-nads:,-nads:] # extract related adsorbate and non-diagonal terms
+        newb_matCO = newb_matCO[nads//repeat**2*(math.floor(repeat**2/2.0)):nads//repeat**2*(math.ceil(repeat**2/2.0))] # examinimg only center one is sufficient
+
+    #     print('orig', newb_matCO)
+    #     print(mask)
+        masked = newb_matCO * mask
+#         print('mod',masked)
+        mask = (newb_matCO == 0)
+        nnearestbonding = np.sum(masked)
+        results.append([i,nnearestbonding])
+
+        i += 1
+    #     if (done == 1).all() or i==6:
+    #         break
+        if i==terminate:
+            break
+    return np.array(results) # [distance, # of nearest adsorbate]
