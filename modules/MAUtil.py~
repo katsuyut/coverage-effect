@@ -8,7 +8,7 @@ from ase.visualize import view
 
 
 def query(name, env='spacom'):
-    path = '/home/katsuyut/research/coverage-effect/database/' + name
+    path = './database/' + name
     try:
         traj = Trajectory(path)
         atoms = read(path)
@@ -20,7 +20,7 @@ def query(name, env='spacom'):
     
 
 def init_query(name, env='spacom'):
-    path = '/home/katsuyut/research/coverage-effect/iniit/' + name
+    path = './init/' + name
     try:
         atoms = read(path)
         if env == 'local':
@@ -31,12 +31,12 @@ def init_query(name, env='spacom'):
 
 
 def getallene():
-    files = os.listdir('/home/katsuyut/research/coverage-effect/database/')
+    files = os.listdir('./database/')
 
     for filename in files:
         if '.traj' in filename:
             if not 'all' in filename:
-                path = '/home/katsuyut/research/coverage-effect/database/' + filename
+                path = './database/' + filename
                 atoms = read(path)
                 try:
                     energy = atoms.get_potential_energy()
