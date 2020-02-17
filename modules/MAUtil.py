@@ -20,7 +20,7 @@ def query(name, env='spacom'):
     
 
 def init_query(name, env='spacom'):
-    path = '/home/katsuyut/research/coverage-effect/iniit/' + name
+    path = '/home/katsuyut/research/coverage-effect/init/' + name
     try:
         atoms = read(path)
         if env == 'local':
