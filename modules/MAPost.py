@@ -11,11 +11,13 @@ from pymatgen.analysis.local_env import VoronoiNN
 from MAUtil import *
 from MAInit import *
 
+databasepath = '/home/katsuyut/research/coverage-effect/database/'
+initpath = '/home/katsuyut/research/coverage-effect/init/'
 
 def getmaxdiff(name):
     name = name.split('.traj')[0]
     name = name + '_all.traj'
-    path = '/home/katsuyut/database/' + name
+    path = databasepath + name
     traj = Trajectory(path)
     
     diff = abs(traj[-1].positions - traj[0].positions)

@@ -6,9 +6,11 @@ from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.visualize import view
 
+databasepath = '/home/katsuyut/research/coverage-effect/database/'
+initpath = '/home/katsuyut/research/coverage-effect/init/'
 
 def query(name, env='spacom'):
-    path = '/home/katsuyut/research/coverage-effect/database/' + name
+    path = databasepath + name
     try:
         traj = Trajectory(path)
         atoms = read(path)
@@ -20,7 +22,7 @@ def query(name, env='spacom'):
     
 
 def init_query(name, env='spacom'):
-    path = '/home/katsuyut/research/coverage-effect/init/' + name
+    path = initpath + name
     try:
         atoms = read(path)
         if env == 'local':
@@ -31,12 +33,12 @@ def init_query(name, env='spacom'):
 
 
 def getallene():
-    files = os.listdir('/home/katsuyut/research/coverage-effect/database/')
+    files = os.listdir(databasepath)
 
     for filename in files:
         if '.traj' in filename:
             if not 'all' in filename:
-                path = '/home/katsuyut/research/coverage-effect/database/' + filename
+                path = databasepath + filename
                 atoms = read(path)
                 try:
                     energy = atoms.get_potential_energy()

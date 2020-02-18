@@ -9,9 +9,13 @@ from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.optimize import QuasiNewton
 
+databasepath = '/home/katsuyut/research/coverage-effect/database/'
+initpath = '/home/katsuyut/research/coverage-effect/init/'
+zvalpath = '/home/katsuyut/research/coverage-effect/zval.txt'
+
 
 def getnbands(atoms, f=0.5):
-    file = open('/home/katsuyut/module/zval.txt', 'r')
+    file = open(zvalpath, 'r')
     combs = file.read().split('\n')
     electrondict = {}
     for comb in combs:
@@ -39,22 +43,50 @@ def getnbands(atoms, f=0.5):
 
 
 def getkpts(atoms):
+    c = 30
     cell = atoms.get_cell()
-    x = np.sqrt(np.square(cell[0][0]) + np.square(cell[0][1]) + np.square(cell[0][2]))
-    y = np.sqrt(np.square(cell[1][0]) + np.square(cell[1][1]) + np.square(cell[1][2]))
-    z = np.sqrt(np.square(cell[2][0]) + np.square(cell[2][1]) + np.square(cell[2][2]))
-    kpts1 = int(30/x)
-    kpts2 = int(30/y)
-    kpts3 = int(30/z)
+    kpts = []
+
+    for i in range(3):
+        l = np.sqrt(np.square(cell[i][0]) + np.square(cell[i][1]) + np.square(cell[i][2]))
+        if int(c/l)==0:
+            kpts.append(1)
+        else:
+            kpts.append(int(c/l))
+
+    return kpts
+
+
+def getvasptags(vxc = 'PBE', vgga = 'RP', vncore = 4, vencut = 350,
+                vnsw = 200, vkpts = kpoints, vibrion = 2, visif = 0,
+                vediffg = -3.00e-02, visym = 0, vsymprec = 1e-10,
+                vlreal = 'Auto', vlcharg = False, vlwave = False
+                )
+    vasptags = Vasp(
+                xc = vxc,
+                gga = vgga,
+                ncore = vncore,
+                encut = vencut,
+                nsw = vnsw,
+                kpts = vkpts,
+                ibrion = vibrion,
+                isif = visif,
+                ediffg = vendiffg,
+                isym = visym,
+                symprec = vsymprec,
+                lreal = vlreal,
+                lcharg = vlcharg,
+                lwave = vlwave,
+                )
     
-    return [kpts1, kpts2, kpts3]
-                    
+    return vasptags
+
 
 def getenergy(atoms, name, vaspset, env):
     calc = vaspset
     
-    trajpath = '/home/katsuyut/database/' + str(name) + '.traj'
-    trajpath_all = '/home/katsuyut/database/' + str(name) + '_all.traj'
+    trajpath = databasepath + str(name) + '.traj'
+    trajpath_all = databasepath + str(name) + '_all.traj'
 
     if env == 'local':
         atoms.set_calculator(EMT())
