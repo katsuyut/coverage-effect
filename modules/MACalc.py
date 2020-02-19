@@ -187,9 +187,7 @@ def getdefaultvasptags(xc = 'RPBE'):
     return tagdict
 
 
-def getenergy(atoms, name, vaspset, env):
-    calc = vaspset
-    
+def getenergy(atoms, name, vasptags, env):
     trajpath = databasepath + str(name) + '.traj'
     trajpath_all = databasepath + str(name) + '_all.traj'
 
@@ -199,7 +197,7 @@ def getenergy(atoms, name, vaspset, env):
         dyn = QuasiNewton(atoms, trajectory=trajpath)
         dyn.run(fmax=0.05)
     elif env == 'spacom':
-        atoms.set_calculator(calc)
+        atoms.set_calculator(vasptags)
         
     try:
         e_atoms = atoms.get_potential_energy()

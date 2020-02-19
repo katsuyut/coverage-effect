@@ -41,4 +41,4 @@ f = open('result.txt', 'w')
 f.write('{0}\n'.format(str(latticeconstant)))
 f.close()
 
-print((time.time() - start)/60)
+print((time.time() - start)/60, 'min')

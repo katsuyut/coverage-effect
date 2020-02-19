@@ -46,13 +46,16 @@ vapstags = Vasp(
     )
 
 ### Get energy ###
-print(query(name, env)[1])
-if type(query(name, env)[1]) != float:
+if query(name, env) != 'No file':
+    atoms = query(name, env)
+    print(atoms.get_potential_energy())
+    e_atoms = 'Already in directory'
+else:
     e_atoms = getenergy(atoms, name[0:-5], vapstags, env)
-        
+
 print('{0}, {1}'.format(name ,e_atoms))
 f = open('result.txt', 'a')
 f.write('{0}, {1}'.format(name ,e_atoms))
 f.close()
 
-print((time.time() - start)/60)
+print((time.time() - start)/60, 'min')

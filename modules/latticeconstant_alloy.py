@@ -76,4 +76,4 @@ for i in a*testrange:
 for i in range(len(energylist)):
     print(energylist[i])
 
-print((time.time() - start)/60)
+print((time.time() - start)/60, 'min')

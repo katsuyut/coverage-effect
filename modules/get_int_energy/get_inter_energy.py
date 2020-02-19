@@ -50,4 +50,4 @@ f = open('result.txt', 'a')
 f.write('{0}, {1}'.format(name ,e_atoms))
 f.close()
 
-print((time.time() - start)/60)
+print((time.time() - start)/60, 'min')

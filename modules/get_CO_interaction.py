@@ -49,4 +49,4 @@ for r in dist:
     f.write('{0}, {1}'.format(r ,e_atoms))
     f.close()
 
-print((time.time() - start)/60)
+print((time.time() - start)/60, 'min')
