@@ -4,6 +4,7 @@ from ase import Atoms, Atom
 from ase.calculators.emt import EMT
 from ase.calculators.vasp import Vasp, Vasp2
 from ase.calculators.singlepoint import SinglePointCalculator as SPC
+from ase.constraints import FixAtoms
 from ase.eos import EquationOfState
 from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
@@ -57,29 +58,133 @@ def getkpts(atoms):
     return kpts
 
 
-def getvasptags(vxc = 'PBE', vgga = 'RP', vncore = 4, vencut = 350,
-                vnsw = 200, vkpts = None, vibrion = 2, visif = 0,
-                vediffg = -3.00e-02, visym = 0, vsymprec = 1e-10,
-                vlreal = 'Auto', vlcharg = False, vlwave = False
-                ):
-    vasptags = Vasp(
-                xc = vxc,
-                gga = vgga,
-                ncore = vncore,
-                encut = vencut,
-                nsw = vnsw,
-                kpts = vkpts,
-                ibrion = vibrion,
-                isif = visif,
-                ediffg = vendiffg,
-                isym = visym,
-                symprec = vsymprec,
-                lreal = vlreal,
-                lcharg = vlcharg,
-                lwave = vlwave,
-                )
-    
-    return vasptags
+def getdefaultvasptags(xc = 'RPBE'):
+    """
+    Default is same as used in GASpy (xc=RPBE)
+    If xc is specified, a different set of tags is returned
+    Available xcs are :RPBE, RPBE-D2, vdW-DF(revPBE-DF), optB88-vdW, vdW-DF2 (rPW86-vdw), BEEF-vdw
+
+    reference
+    https://wiki.fysik.dtu.dk/ase/ase/calculators/vasp.html
+    """
+    if xc == 'RPBE':
+        tagdict = {
+            'xc' : 'RPBE',
+            'pp' : 'PBE',
+            'ncore' : 4,
+            'encut' : 350,
+            'nsw' : 200,
+            'kpts' : None,
+            'ibrion' : 2,
+            'isif' : 0,
+            'ediffg' : -3.00e-02,
+            'isym' : 0,
+            'symprec' : 1.00e-10,
+            'lreal' : 'Auto',
+            'lcharg' : False,
+            'lwave' : False,
+            'ivdw' : 0,
+            'lasph' : False,
+        }
+    elif xc == 'RPBE-D2':
+        tagdict = {
+            'xc' : 'RPBE-D2',
+            'pp' : 'PBE',
+            'ncore' : 4,
+            'encut' : 350,
+            'nsw' : 200,
+            'kpts' : None,
+            'ibrion' : 2,
+            'isif' : 0,
+            'ediffg' : -3.00e-02,
+            'isym' : 0,
+            'symprec' : 1.00e-10,
+            'lreal' : 'Auto',
+            'lcharg' : False,
+            'lwave' : False,
+            'ivdw' : 1,
+            'lasph' : False,
+        }
+    elif xc == 'vdW-DF':
+        tagdict = {
+            'xc' : 'vdW-DF',
+            'pp' : 'PBE',
+            'ncore' : 4,
+            'encut' : 350,
+            'nsw' : 200,
+            'kpts' : None,
+            'ibrion' : 2,
+            'isif' : 0,
+            'ediffg' : -3.00e-02,
+            'isym' : 0,
+            'symprec' : 1.00e-10,
+            'lreal' : 'Auto',
+            'lcharg' : False,
+            'lwave' : False,
+            'ivdw' : 0,
+            'lasph' : True,
+        }
+    elif xc == 'optB88-vdW':
+        tagdict = {
+            'xc' : 'optB88-vdW',
+            'pp' : 'PBE',
+            'ncore' : 4,
+            'encut' : 350,
+            'nsw' : 200,
+            'kpts' : None,
+            'ibrion' : 2,
+            'isif' : 0,
+            'ediffg' : -3.00e-02,
+            'isym' : 0,
+            'symprec' : 1.00e-10,
+            'lreal' : 'Auto',
+            'lcharg' : False,
+            'lwave' : False,
+            'ivdw' : 0,
+            'lasph' : True,
+        }
+    elif xc == 'vdW-DF2':
+        tagdict = {
+            'xc' : 'vdW-DF2',
+            'pp' : 'PBE',
+            'ncore' : 4,
+            'encut' : 350,
+            'nsw' : 200,
+            'kpts' : None,
+            'ibrion' : 2,
+            'isif' : 0,
+            'ediffg' : -3.00e-02,
+            'isym' : 0,
+            'symprec' : 1.00e-10,
+            'lreal' : 'Auto',
+            'lcharg' : False,
+            'lwave' : False,
+            'ivdw' : 0,
+            'lasph' : True,
+        }    
+    elif xc == 'BEEF-vdW':
+        tagdict = {
+            'xc' : 'BEEF-vdW',
+            'pp' : 'PBE',
+            'ncore' : 4,
+            'encut' : 350,
+            'nsw' : 200,
+            'kpts' : None,
+            'ibrion' : 2,
+            'isif' : 0,
+            'ediffg' : -3.00e-02,
+            'isym' : 0,
+            'symprec' : 1.00e-10,
+            'lreal' : 'Auto',
+            'lcharg' : False,
+            'lwave' : False,
+            'ivdw' : 0,
+            'lasph' : True,
+        }
+    else:
+        print('No default tags set found')
+
+    return tagdict
 
 
 def getenergy(atoms, name, vaspset, env):

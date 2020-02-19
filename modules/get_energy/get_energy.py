@@ -25,7 +25,22 @@ if 3 in set(atoms.get_tags()): # set constraint only on surface calc
 kpoints = getkpts(atoms)    
 nb = getnbands(atoms, 2) # default value is 0.5
 
-vapstags = getvasptags(vkpts = kpoints)
+tagdict = getdefaultvasptags('RPBE')
+vapstags = Vasp(
+    xc = tagdict['xc'],
+    pp = tagdict['pp'],
+    ncore = tagdict['ncore'],
+	encut = tagdict['xc'],
+    nsw = tagdict['nsw'],
+    kpts = kpoints,
+    ibrion = tagdict['ibrion'],
+    isif = tagdict['isif'],
+    ediffg = tagdict['ediffg'],
+    isym = tagdict['isym'],
+    lreal = tagdict['lreal'],
+    lcharg = tagdict['lcharg'],
+    lwave = tagdict['lwave'],
+    )
 
 ### Get energy ###
 print(query(name, env)[1])
