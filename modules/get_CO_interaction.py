@@ -1,8 +1,9 @@
 import numpy as np
-import sys
-import copy
+import sys, copy, time
 from MAUtil import *
 from MACalc import *
+
+start = time.time()
 
 env = 'local'
 # env = 'spacom'
@@ -47,3 +48,5 @@ for r in dist:
     f = open('result.txt', 'a')
     f.write('{0}, {1}'.format(r ,e_atoms))
     f.close()
+
+print((time.time() - start)/60)

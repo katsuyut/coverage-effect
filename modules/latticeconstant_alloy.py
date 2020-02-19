@@ -1,7 +1,9 @@
 import numpy as np
-import sys
+import sys, copy, time
 from MAUtil import *
 from MACalc import *
+
+start = time.time()
 
 env='local'
 
@@ -73,3 +75,5 @@ for i in a*testrange:
         
 for i in range(len(energylist)):
     print(energylist[i])
+
+print((time.time() - start)/60)

@@ -1,7 +1,9 @@
 import numpy as np
-import sys
+import sys, copy, time
 from MAUtil import *
 from MACalc import *
+
+start = time.time()
 
 a = 3.65 # approximate lattice constant
 b = a / 2
@@ -38,3 +40,5 @@ latticeconstant = getLC(atoms, vapstags, env)
 f = open('result.txt', 'w')
 f.write('{0}\n'.format(str(latticeconstant)))
 f.close()
+
+print((time.time() - start)/60)
