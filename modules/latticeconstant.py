@@ -18,7 +18,7 @@ kpoints = getkpts(atoms)
 nb = getnbands(atoms, 2) # default value is 0.5
 
 tagdict = getdefaultvasptags('RPBE')
-vapstags = Vasp(
+vasptags = Vasp(
     xc = tagdict['xc'],
     pp = tagdict['pp'],
     ncore = tagdict['ncore'],
@@ -36,7 +36,7 @@ vapstags = Vasp(
     lasph = tagdict['lasph'],
     )
 
-latticeconstant = getLC(atoms, vapstags, env)
+latticeconstant = getLC(atoms, vasptags, env)
 f = open('result.txt', 'w')
 f.write('{0}\n'.format(str(latticeconstant)))
 f.close()

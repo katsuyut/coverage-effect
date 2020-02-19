@@ -27,7 +27,7 @@ kpoints = getkpts(atoms)
 nb = getnbands(atoms, 2) # default value is 0.5
 
 tagdict = getdefaultvasptags('RPBE')
-vapstags = Vasp(
+vasptags = Vasp(
     xc = tagdict['xc'],
     pp = tagdict['pp'],
     ncore = tagdict['ncore'],
@@ -51,7 +51,7 @@ if query(name, env) != 'No file':
     print(atoms.get_potential_energy())
     e_atoms = 'Already in directory'
 else:
-    e_atoms = getenergy(atoms, name[0:-5], vapstags, env)
+    e_atoms = getenergy(atoms, name[0:-5], vasptags, env)
 
 print('{0}, {1}'.format(name ,e_atoms))
 f = open('result.txt', 'a')

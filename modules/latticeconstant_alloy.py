@@ -30,7 +30,7 @@ kpoints = getkpts(atoms)
 nb = getnbands(atoms, 2) # default value is 0.5
 
 tagdict = getdefaultvasptags('RPBE')
-vapstags = Vasp(
+vasptags = Vasp(
     xc = tagdict['xc'],
     pp = tagdict['pp'],
     ncore = tagdict['ncore'],
@@ -63,7 +63,7 @@ for i in a*testrange:
             dyn = QuasiNewton(atoms)
             dyn.run(fmax=0.05)
         elif env == 'spacom':
-            atoms.set_calculator(vapstags)
+            atoms.set_calculator(vasptags)
 
         try:
             atoms.get_potential_energy()
