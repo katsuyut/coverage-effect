@@ -37,6 +37,8 @@ vapstags = Vasp(
     lreal = tagdict['lreal'],
     lcharg = tagdict['lcharg'],
     lwave = tagdict['lwave'],
+    ivdw = tagdict['ivdw'],
+    lasph = tagdict['lasph'],
     )
         
 ### Get energy ###
