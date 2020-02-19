@@ -58,7 +58,7 @@ def getkpts(atoms):
 
 
 def getvasptags(vxc = 'PBE', vgga = 'RP', vncore = 4, vencut = 350,
-                vnsw = 200, vkpts = kpoints, vibrion = 2, visif = 0,
+                vnsw = 200, vkpts = None, vibrion = 2, visif = 0,
                 vediffg = -3.00e-02, visym = 0, vsymprec = 1e-10,
                 vlreal = 'Auto', vlcharg = False, vlwave = False
                 ):
