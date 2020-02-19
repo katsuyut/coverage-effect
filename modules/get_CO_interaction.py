@@ -26,7 +26,7 @@ for r in dist:
         xc = tagdict['xc'],
         pp = tagdict['pp'],
         ncore = tagdict['ncore'],
-        encut = tagdict['xc'],
+        encut = tagdict['encut'],
         nsw = tagdict['nsw'],
         kpts = kpoints,
         ibrion = tagdict['ibrion'],

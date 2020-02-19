@@ -31,7 +31,7 @@ vasptags = Vasp(
     xc = tagdict['xc'],
     pp = tagdict['pp'],
     ncore = tagdict['ncore'],
-    encut = tagdict['xc'],
+    encut = tagdict['encut'],
     nsw = tagdict['nsw'],
     kpts = kpoints,
     ibrion = tagdict['ibrion'],
@@ -44,13 +44,14 @@ vasptags = Vasp(
     ivdw = tagdict['ivdw'],
     lasph = tagdict['lasph'],
     )
-
+print(tagdict['ibrion'])
 ### Get energy ###
 if query(name, env) != 'No file':
     atoms = query(name, env)
     print(atoms.get_potential_energy())
     e_atoms = 'Already in directory'
 else:
+    atoms.set_calculator(vasptags)
     e_atoms = getenergy(atoms, name[0:-5], vasptags, env)
 
 print('{0}, {1}'.format(name ,e_atoms))
