@@ -234,6 +234,7 @@ class getLC():
         self.ele = ele
         defprops = {
             'Cu' : ['fcc', 3.6149, 0],
+            # 'Cu' : ['hcp', 3.6149, 5],  # for test
             'Pt' : ['fcc', 3.9242, 0],
             'Ag' : ['fcc', 4.0853, 0],
             'Pd' : ['fcc', 3.8907, 0],
@@ -343,11 +344,11 @@ class getLC():
                     elif env == 'spacom':
                         atom.set_calculator(vasptags)
                     
-                    atom.set_calculator(vasptags)
                     atom.get_potential_energy()
                     traj.write(atom)
 
-            configs = read(filename) # 'Ru.traj@:' 
+            filenameat = filename + '@:'
+            configs = read(filenameat) 
             energies = [config.get_potential_energy() for config in configs]
             a = np.array([config.cell[0, 0] for config in configs])
             c = np.array([config.cell[2, 2] for config in configs])
