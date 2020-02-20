@@ -324,7 +324,7 @@ class getLC():
             a0 = (v0/2.0)**(1.0/3.0)*2.0
 
             f = open('result.txt', 'a')
-            f.write('{0}, {1}\n'.format(self.ele, str(a0)))
+            f.write('{0}, {1}, {2}\n'.format(self.ele, xc,str(a0)))
             f.close()
 
             return a0
@@ -362,7 +362,7 @@ class getLC():
             a0, c0 = np.linalg.solve(p2.T, -p1)
 
             f = open('result.txt', 'a')
-            f.write('{0}, {1}, {2}\n'.format(self.ele, str(a0),str(c0)))
+            f.write('{0}, {1}, {2}, {3}\n'.format(self.ele, xc, str(a0),str(c0)))
             f.close()
 
             return a0, c0
