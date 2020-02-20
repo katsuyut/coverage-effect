@@ -14,10 +14,14 @@
 # --priority=TOP
 
 
-module purge; module load python/anaconda2; source activate /home/zulissi/GASpy_conda/; module load intel/18.0.3.222 impi/2018_Update_3  cuda vasp; export PYTHONPATH=./:$PYTHONPATH; ulimit -s unlimited; #export PYTHONPATH=/home/zulissi/software/standard_tasks/:$PYTHONPATH
+module purge
+# module load python/anaconda2
+# source activate /home/zulissi/GASpy_conda/
+module load intel/18.0.3.222 impi/2018_Update_3  cuda vasp
+export PYTHONPATH=./:$PYTHONPATH
+ulimit -s unlimited
 
 export PATH="/home/zulissi/software/vasp/5.4.4_impi_cuda_patch0518_intel0818/bin/:$PATH"
-#export VASP_PP_PATH=/home/zulissi/software/vasp/pseudopotentials/5.4.4/
 export VASP_SCRIPT=./run_vasp.py
 export VASP_PP_PATH=/home/katsuyut/5.4.4
 
@@ -29,6 +33,4 @@ echo $TMPDIR
 echo $VASP_SCRIPT
 echo $VASP_PP_PATH
 
-# python ./la_Rh.py
-python ./la_hcp_Ru.py
-python ./la_hcp_Zn.py
+python ./latticeconstant.py
