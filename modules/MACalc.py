@@ -9,6 +9,7 @@ from ase.eos import EquationOfState
 from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.optimize import QuasiNewton
+from ase.build import bulk
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
@@ -227,7 +228,7 @@ def getenergy(atoms, name, vasptags, env):
     return e_atoms
 
 
-def getLC(atoms, vaspvasptagsset, env='spacom'):
+def getLC(atoms, vasptags, env='spacom'):
     volumes = []
     energies = []
     cells = []
@@ -259,3 +260,143 @@ def getLC(atoms, vaspvasptagsset, env='spacom'):
     latticeconstant = (v0/2.0)**(1.0/3.0)*2.0
 
     return latticeconstant
+
+
+class agetLC():
+    def __init__(self, ele):
+        # https://periodictable.com/Properties/A/LatticeConstants.html
+        self.ele = ele
+        defprops = {
+            'Cu' : ['fcc', 3.6149, 0],
+            'Pt' : ['fcc', 3.9242, 0],
+            'Ag' : ['fcc', 4.0853, 0],
+            'Pd' : ['fcc', 3.8907, 0],
+            'Au' : ['fcc', 4.0782, 0],
+            'Ni' : ['fcc', 3.5240, 0],
+            'Al' : ['fcc', 4.0495, 0],
+            'Rh' : ['fcc', 3.8034, 0],
+            'Ru' : ['hcp', 2.7059, 4.2815],
+            'Zn' : ['hcp', 2.6649, 4.9468],
+            }
+        self.defprops = defprops
+        self.structure = defprops[ele][0]
+        self.a0 = defprops[ele][1]
+        self.c0 = defprops[ele][2]
+        self.eps = 0.03
+
+    def createbulk(self, a0, c0):
+        if self.ele not in self.defprops.keys():
+            print('This materials is not available. Add to props.')
+            return None
+        
+        if self.defprops[self.ele][0] == 'fcc':
+            atom = bulk(self.ele, self.defprops[self.ele][0], a = a0)
+        elif self.defprops[self.ele][0] == 'hcp':
+            atom = bulk(self.ele, self.defprops[self.ele][0], a = a0, c = c0)
+        else:
+            print('Only fcc and hcp is available')
+            return None
+
+        return atom
+
+    def calcLC(self, xc, env='spacom'):
+        volumes = []
+        energies = []
+        cells = []
+
+        atom = self.createbulk(self.a0, self.c0)
+        filename = self.ele + '.traj'
+        traj = Trajectory(filename, 'w')
+        
+        tagdict = getdefaultvasptags(xc)
+        kpoints = getkpts(atom)
+        vasptags = Vasp(
+            xc = tagdict['xc'],
+            pp = tagdict['pp'],
+            ncore = tagdict['ncore'],
+            encut = tagdict['encut'],
+            nsw = tagdict['nsw'],
+            kpts = kpoints,
+            ibrion = tagdict['ibrion'],
+            isif = tagdict['isif'],
+            ediffg = tagdict['ediffg'],
+            isym = tagdict['isym'],
+            lreal = tagdict['lreal'],
+            lcharg = tagdict['lcharg'],
+            lwave = tagdict['lwave'],
+            ivdw = tagdict['ivdw'],
+            lasph = tagdict['lasph'],
+            )
+
+
+        ### fcc ###
+        if self.structure == 'fcc':
+            cell = atom.get_cell()
+        
+            for x in np.linspace(1-self.eps, 1+self.eps, 5):
+                atom.set_cell(cell * x, scale_atoms=True)
+            
+                if env == 'local':
+                    atom.set_calculator(EMT())
+
+                    dyn = QuasiNewton(atom)
+                    dyn.run(fmax=0.05)
+                elif env == 'spacom':
+                    atom.set_calculator(vasptags)
+
+                try:
+                    atom.get_potential_energy()
+                    volumes.append(atom.get_volume())
+                    energies.append(atom.get_potential_energy())
+                    cells.append(atom.get_cell())
+
+                except:
+                    print('Error while calculating bulk energy!')
+                
+            eos = EquationOfState(volumes, energies)
+            v0, e0, B = eos.fit()
+            a0 = (v0/2.0)**(1.0/3.0)*2.0
+
+            f = open('result.txt', 'a')
+            f.write('{0}, {1}\n'.format(self.ele, str(a0)))
+            f.close()
+
+            return a0
+
+        ### hcp ###
+        elif self.structure == 'hcp':
+            for a in self.a0 * np.linspace(1-self.eps, 1+self.eps, 5):
+                for c in self.c0 * np.linspace(1-self.eps, 1+self.eps, 5):
+                    atom = self.createbulk(a, c)
+
+                    if env == 'local':
+                        atom.set_calculator(EMT())
+                        dyn = QuasiNewton(atom)
+                        dyn.run(fmax=0.05)
+
+                    elif env == 'spacom':
+                        atom.set_calculator(vasptags)
+                    
+                    atom.set_calculator(vasptags)
+                    atom.get_potential_energy()
+                    traj.write(atom)
+
+            configs = read(filename) # 'Ru.traj@:' 
+            energies = [config.get_potential_energy() for config in configs]
+            a = np.array([config.cell[0, 0] for config in configs])
+            c = np.array([config.cell[2, 2] for config in configs])
+
+            functions = np.array([a**0, a, c, a**2, a * c, c**2])
+            p = np.linalg.lstsq(functions.T, energies, rcond=-1)[0]
+
+            p0 = p[0]
+            p1 = p[1:3]
+            p2 = np.array([(2 * p[3], p[4]),
+                        (p[4], 2 * p[5])])
+            a0, c0 = np.linalg.solve(p2.T, -p1)
+
+            f = open('result.txt', 'a')
+            f.write('{0}, {1}, {2}\n'.format(self.ele, str(a0),str(c0)))
+            f.close()
+
+            return a0, c0

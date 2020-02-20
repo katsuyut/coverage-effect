@@ -208,10 +208,10 @@ def getCoPt3(a):
     return atoms
 
 
-def make_surface_from_bulk(atoms, unitlength):
+def make_surface_from_bulk(atoms, unitlength, height):
     atoms.pbc[2] = False
 
-    atoms = atoms.repeat([unitlength, unitlength, 2])
+    atoms = atoms.repeat([unitlength, unitlength, height])
     atoms.center(vacuum=10, axis=2)
 
     atoms = settag(atoms)

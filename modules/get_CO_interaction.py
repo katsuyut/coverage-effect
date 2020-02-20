@@ -1,9 +1,8 @@
 import numpy as np
-import sys, copy, time
+import sys
+import copy
 from MAUtil import *
 from MACalc import *
-
-start = time.time()
 
 env = 'local'
 # env = 'spacom'
@@ -21,32 +20,28 @@ for r in dist:
     kpoints = getkpts(atoms)    
     nb = getnbands(atoms, 2) # default value is 0.5
 
-    tagdict = getdefaultvasptags('RPBE')
-    vapstags = Vasp(
-        xc = tagdict['xc'],
-        pp = tagdict['pp'],
-        ncore = tagdict['ncore'],
-        encut = tagdict['encut'],
-        nsw = tagdict['nsw'],
-        kpts = kpoints,
-        ibrion = tagdict['ibrion'],
-        isif = tagdict['isif'],
-        ediffg = tagdict['ediffg'],
-        isym = tagdict['isym'],
-        lreal = tagdict['lreal'],
-        lcharg = tagdict['lcharg'],
-        lwave = tagdict['lwave'],
-        ivdw = tagdict['ivdw'],
-        lasph = tagdict['lasph'],
-        )
+    vaspset = Vasp(
+                    xc = 'PBE',
+                    gga = 'RP',
+                    ncore = 4,
+                    encut = 350,
+                    nsw = 200,
+                    kpts = kpoints,
+                    ibrion = 2,
+                    isif = 0,
+                    ediffg = -3.00e-02,
+                    isym = 0,
+                    symprec = 1e-10,
+                    lreal = 'Auto',
+                    lcharg = False,
+                    lwave = False,
+                    )
 
     ### Get energy ###
-    atoms.set_calculator(vapstags)
+    atoms.set_calculator(vaspset)
     e_atoms = atoms.get_potential_energy()
 
     print('{0}, {1}'.format(r ,e_atoms))
     f = open('result.txt', 'a')
     f.write('{0}, {1}'.format(r ,e_atoms))
     f.close()
-
-print((time.time() - start)/60, 'min')
