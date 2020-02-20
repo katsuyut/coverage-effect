@@ -41,7 +41,7 @@ for r in dist:
 
 
     ### Get energy ###
-    atoms.set_calculator(vaspset)
+    atoms.set_calculator(vasptags)
     e_atoms = atoms.get_potential_energy()
 
     print('{0}, {1}'.format(r ,e_atoms))

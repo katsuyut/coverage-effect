@@ -89,7 +89,7 @@ def getdefaultvasptags(xc = 'RPBE'):
         }
     elif xc == 'RPBE-D2':
         tagdict = {
-            'xc' : 'RPBE-D2',
+            'xc' : 'RPBE',
             'pp' : 'PBE',
             'ncore' : 4,
             'encut' : 350,
@@ -228,7 +228,7 @@ def getenergy(atoms, name, vasptags, env):
     return e_atoms
 
 
-class getLC():
+class make_surface():
     def __init__(self, ele):
         # https://periodictable.com/Properties/A/LatticeConstants.html
         self.ele = ele
@@ -250,6 +250,8 @@ class getLC():
         self.a0 = defprops[ele][1]
         self.c0 = defprops[ele][2]
         self.eps = 0.03
+        self.a = None
+        self.c = None
 
     def createbulk(self, a0, c0):
         if self.ele not in self.defprops.keys():
@@ -322,13 +324,15 @@ class getLC():
                 
             eos = EquationOfState(volumes, energies)
             v0, e0, B = eos.fit()
-            a0 = (v0/2.0)**(1.0/3.0)*2.0
+            a = (v0/2.0)**(1.0/3.0)*2.0
 
             f = open('result.txt', 'a')
-            f.write('{0}, {1}, {2}\n'.format(self.ele, xc,str(a0)))
+            f.write('{0}, {1}, {2}\n'.format(self.ele, xc,str(a)))
             f.close()
 
-            return a0
+            self.a = a
+
+            return a
 
         ### hcp ###
         elif self.structure == 'hcp':
@@ -360,10 +364,34 @@ class getLC():
             p1 = p[1:3]
             p2 = np.array([(2 * p[3], p[4]),
                         (p[4], 2 * p[5])])
-            a0, c0 = np.linalg.solve(p2.T, -p1)
+            a, c = np.linalg.solve(p2.T, -p1)
 
             f = open('result.txt', 'a')
-            f.write('{0}, {1}, {2}, {3}\n'.format(self.ele, xc, str(a0),str(c0)))
+            f.write('{0}, {1}, {2}, {3}\n'.format(self.ele, xc, str(a),str(c)))
             f.close()
 
-            return a0, c0
+            self.a = a
+            self.c = c
+
+            return a, c
+
+    def make_surface_from_bulk(self, unitlength, height):
+        atom = self.createbulk(self.a, self.c)
+        atom.pbc[2] = False
+
+        atoms = atom.repeat([unitlength, unitlength, height])
+        atoms.center(vacuum=10, axis=2)
+
+        atoms = self.settag(atoms)
+        return atoms
+
+
+    def settag(self, atoms):
+        poslis = list(set(atoms.get_positions()[:,2]))
+        poslis.sort()
+
+        for i in range(len(atoms)):
+            for j in range(len(poslis)):
+                if atoms[i].position[2] == poslis[j]:
+                    atoms[i].tag = len(poslis) - j
+        return atoms

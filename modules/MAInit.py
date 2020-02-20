@@ -9,6 +9,43 @@ from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 
+def getNiGa(a):
+    b = a * 2**0.5
+    x = a/2
+    y = b/2
+    z = b/2
+
+    pos = np.array([[0,y,0],[0,0,z],[x,0,0],[x,y,z]])
+
+    atoms = Atoms(symbols = 'Ga2Ni2', # Ga2Ni2
+                       positions= pos,
+                       cell = np.array([[x*2,0,0],
+                                        [0,y*2,0],
+                                        [0,0,z*2]]),
+                       pbc=1
+                       )
+    
+    return atoms
+
+
+def getCoPt3(a):
+    x = a/2
+    y = a/2
+    z = a/2
+
+    pos = np.array([[0,0,0],[x,y,0],[0,y,z],[x,0,z]])
+
+    atoms = Atoms(symbols = 'CoPt3', # Ga2Ni2
+                       positions= pos,
+                       cell = np.array([[x*2,0,0],
+                                        [0,y*2,0],
+                                        [0,0,z*2]]),
+                       pbc=1
+                       )
+    
+    return atoms
+
+
 def getadsites(atoms, symm_reduce):
     '''
     Given surface, return sites dictionary.
@@ -171,64 +208,6 @@ def getcalcatoms(atoms, molecule, h, calccomb):
             add_adsorbate(atoms, molecule, h, calccomb[i][:2])
 
             
-def getNiGa(a):
-    b = a * 2**0.5
-    x = a/2
-    y = b/2
-    z = b/2
-
-    pos = np.array([[0,y,0],[0,0,z],[x,0,0],[x,y,z]])
-
-    atoms = Atoms(symbols = 'Ga2Ni2', # Ga2Ni2
-                       positions= pos,
-                       cell = np.array([[x*2,0,0],
-                                        [0,y*2,0],
-                                        [0,0,z*2]]),
-                       pbc=1
-                       )
-    
-    return atoms
-
-
-def getCoPt3(a):
-    x = a/2
-    y = a/2
-    z = a/2
-
-    pos = np.array([[0,0,0],[x,y,0],[0,y,z],[x,0,z]])
-
-    atoms = Atoms(symbols = 'CoPt3', # Ga2Ni2
-                       positions= pos,
-                       cell = np.array([[x*2,0,0],
-                                        [0,y*2,0],
-                                        [0,0,z*2]]),
-                       pbc=1
-                       )
-    
-    return atoms
-
-
-def make_surface_from_bulk(atoms, unitlength, height):
-    atoms.pbc[2] = False
-
-    atoms = atoms.repeat([unitlength, unitlength, height])
-    atoms.center(vacuum=10, axis=2)
-
-    atoms = settag(atoms)
-    return atoms
-
-
-def settag(atoms):
-    poslis = list(set(atoms.get_positions()[:,2]))
-    poslis.sort()
-
-    for i in range(len(atoms)):
-        for j in range(len(poslis)):
-            if atoms[i].position[2] == poslis[j]:
-                atoms[i].tag = len(poslis) - j
-    return atoms
-
-
 def modpos(sites):
     modsites = []
     for i in range(len(sites)):
@@ -391,13 +370,11 @@ def removemolecule(atoms, molecule):
         for j in molecule:
             if cpatoms[i].symbol == j:
                 cpatoms.pop(i)
-#                 print(cpatoms.symbols)
                 break
     return cpatoms, poslis
 
 
 def creategroup(bareatoms, sites):
-    barestruct = AseAtomsAdaptor.get_structure(bareatoms)
     baresites = getadsites(bareatoms, True)
     redsites_ = baresites['all']
     redsites = [list(i) for i in redsites_]
@@ -409,7 +386,7 @@ def creategroup(bareatoms, sites):
         unique.append(tmp)
     
     group = copy.deepcopy(unique)
-    num = 0
+
     for i in range(len(sites)):
         tmp = []
         tmp.append(sites[i])
@@ -425,7 +402,6 @@ def creategroup(bareatoms, sites):
             tmp2 = []
             tmp2.append(unique[j])
             if checkifsame(bareatoms, tmp, tmp2):
-#                 print(j, 'same config found!')
                 group[j].append(sites[i])
                 break
 
