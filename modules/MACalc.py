@@ -260,10 +260,9 @@ def getenergy(atoms, name, vasptags, env):
 
 
 class make_surface():
-    def __init__(self, ele, xc):
+    def __init__(self, ele):
         # https://periodictable.com/Properties/A/LatticeConstants.html
         self.ele = ele
-        self.xc = xc
         defprops = {
             # 'Cu' : ['fcc', 3.6149, 0],
             'Cu' : ['hcp', 3.6149, 5],  # for test
@@ -300,7 +299,9 @@ class make_surface():
 
         return atom
 
-    def calcLC(self, env='spacom'):
+    def calcLC(self, xc='RPBE', env='spacom'):
+        self.xc = xc
+        
         volumes = []
         energies = []
         cells = []
