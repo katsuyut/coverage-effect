@@ -309,25 +309,9 @@ class make_surface():
         filename = self.ele + '.traj'
         traj = Trajectory(filename, 'w')
         
-        tagdict = getdefaultvasptags(self.xc)
-        kpoints = getkpts(atom)
-        vasptags = Vasp(
-            xc = tagdict['xc'],
-            pp = tagdict['pp'],
-            ncore = tagdict['ncore'],
-            encut = tagdict['encut'],
-            nsw = tagdict['nsw'],
-            kpts = kpoints,
-            ibrion = tagdict['ibrion'],
-            isif = tagdict['isif'],
-            ediffg = tagdict['ediffg'],
-            isym = tagdict['isym'],
-            lreal = tagdict['lreal'],
-            lcharg = tagdict['lcharg'],
-            lwave = tagdict['lwave'],
-            ivdw = tagdict['ivdw'],
-            lasph = tagdict['lasph'],
-            )
+        tagdict = getdefaultvasptags('RPBE')
+        tagdict['kpts'] = kpoints
+        vasptags = setvasptags(tagdict)
 
 
         ### fcc ###
