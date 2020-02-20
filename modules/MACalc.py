@@ -264,8 +264,8 @@ class make_surface():
         # https://periodictable.com/Properties/A/LatticeConstants.html
         self.ele = ele
         defprops = {
-            # 'Cu' : ['fcc', 3.6149, 0],
-            'Cu' : ['hcp', 3.6149, 5],  # for test
+            'Cu' : ['fcc', 3.6149, 0],
+            # 'Cu' : ['hcp', 3.6149, 5],  # for test
             'Pt' : ['fcc', 3.9242, 0],
             'Ag' : ['fcc', 4.0853, 0],
             'Pd' : ['fcc', 3.8907, 0],
@@ -301,7 +301,7 @@ class make_surface():
 
     def calcLC(self, xc='RPBE', env='spacom'):
         self.xc = xc
-        
+
         volumes = []
         energies = []
         cells = []
@@ -309,7 +309,8 @@ class make_surface():
         atom = self.createbulk(self.a0, self.c0)
         filename = self.ele + '.traj'
         traj = Trajectory(filename, 'w')
-        
+
+        kpoints = getkpts(atom)
         tagdict = getdefaultvasptags('RPBE')
         tagdict['kpts'] = kpoints
         vasptags = setvasptags(tagdict)
@@ -404,7 +405,7 @@ class make_surface():
                     vacuum=10.0)    
 
         elif self.structure == 'hcp':
-            if face == '0001':   
+            if face == '0001':
                 atoms = hcp0001(self.ele, a=self.a, c=self.c,
                 size=(unitlength, unitlength, layers),
                 vacuum=10.0)
