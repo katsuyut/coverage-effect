@@ -17,25 +17,28 @@ for r in dist:
                   cell=(10., 10., 10.))
 
     ### Set vasp ###    
-    kpoints = getkpts(atoms)    
+    kpoints = getkpts(atoms)
     nb = getnbands(atoms, 2) # default value is 0.5
 
-    vaspset = Vasp(
-                    xc = 'PBE',
-                    gga = 'RP',
-                    ncore = 4,
-                    encut = 350,
-                    nsw = 200,
-                    kpts = kpoints,
-                    ibrion = 2,
-                    isif = 0,
-                    ediffg = -3.00e-02,
-                    isym = 0,
-                    symprec = 1e-10,
-                    lreal = 'Auto',
-                    lcharg = False,
-                    lwave = False,
-                    )
+    tagdict = getdefaultvasptags('RPBE')
+    vasptags = Vasp(
+        xc = tagdict['xc'],
+        pp = tagdict['pp'],
+        ncore = tagdict['ncore'],
+        encut = tagdict['encut'],
+        nsw = tagdict['nsw'],
+        kpts = kpoints,
+        ibrion = tagdict['ibrion'],
+        isif = tagdict['isif'],
+        ediffg = tagdict['ediffg'],
+        isym = tagdict['isym'],
+        lreal = tagdict['lreal'],
+        lcharg = tagdict['lcharg'],
+        lwave = tagdict['lwave'],
+        ivdw = tagdict['ivdw'],
+        lasph = tagdict['lasph'],
+        )                                 
+
 
     ### Get energy ###
     atoms.set_calculator(vaspset)
