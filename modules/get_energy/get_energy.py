@@ -16,7 +16,7 @@ fixlayer = 3
 ### Set structure ###
 atoms = init_query(name, env)
 cell = atoms.cell
-    
+
 if 3 in set(atoms.get_tags()): # set constraint only on surface calc
     constraint = FixAtoms(mask=[atom.tag >= fixlayer for atom in atoms])
     atoms.set_constraint(constraint)
@@ -27,23 +27,8 @@ kpoints = getkpts(atoms)
 nb = getnbands(atoms, 2) # default value is 0.5
 
 tagdict = getdefaultvasptags('RPBE')
-vasptags = Vasp(
-    xc = tagdict['xc'],
-    pp = tagdict['pp'],
-    ncore = tagdict['ncore'],
-    encut = tagdict['encut'],
-    nsw = tagdict['nsw'],
-    kpts = kpoints,
-    ibrion = tagdict['ibrion'],
-    isif = tagdict['isif'],
-    ediffg = tagdict['ediffg'],
-    isym = tagdict['isym'],
-    lreal = tagdict['lreal'],
-    lcharg = tagdict['lcharg'],
-    lwave = tagdict['lwave'],
-    ivdw = tagdict['ivdw'],
-    lasph = tagdict['lasph'],
-    )
+tagdict['kpts'] = kpoints
+vasptags = setvasptags(tagdict)
 
 ### Get energy ###
 if query(name, env) != 'No file':

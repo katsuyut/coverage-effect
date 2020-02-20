@@ -1,4 +1,4 @@
 from MACalc import *
 
-Cu = agetLC('Ru')
+Cu = make_surface('Ru')
 Cu.calcLC('RPBE', env='local')

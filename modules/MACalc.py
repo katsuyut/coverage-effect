@@ -9,7 +9,9 @@ from ase.eos import EquationOfState
 from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.optimize import QuasiNewton
-from ase.build import bulk
+from ase.build import bulk, add_adsorbate, rotate
+from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, hcp0001
+
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
@@ -85,6 +87,7 @@ def getdefaultvasptags(xc = 'RPBE'):
             'lcharg' : False,
             'lwave' : False,
             'ivdw' : 0,
+            'vdw_s6' : 0.75,
             'lasph' : False,
         }
     elif xc == 'RPBE-D2':
@@ -104,6 +107,7 @@ def getdefaultvasptags(xc = 'RPBE'):
             'lcharg' : False,
             'lwave' : False,
             'ivdw' : 1,
+            'vdw_s6' : 0.75,
             'lasph' : False,
         }
     elif xc == 'vdW-DF':
@@ -123,6 +127,7 @@ def getdefaultvasptags(xc = 'RPBE'):
             'lcharg' : False,
             'lwave' : False,
             'ivdw' : 0,
+            'vdw_s6' : 0.75,
             'lasph' : True,
         }
     elif xc == 'optB88-vdW':
@@ -142,6 +147,7 @@ def getdefaultvasptags(xc = 'RPBE'):
             'lcharg' : False,
             'lwave' : False,
             'ivdw' : 0,
+            'vdw_s6' : 0.75,
             'lasph' : True,
         }
     elif xc == 'vdW-DF2':
@@ -161,6 +167,7 @@ def getdefaultvasptags(xc = 'RPBE'):
             'lcharg' : False,
             'lwave' : False,
             'ivdw' : 0,
+            'vdw_s6' : 0.75,
             'lasph' : True,
         }    
     elif xc == 'BEEF-vdW':
@@ -180,12 +187,36 @@ def getdefaultvasptags(xc = 'RPBE'):
             'lcharg' : False,
             'lwave' : False,
             'ivdw' : 0,
+            'vdw_s6' : 0.75,
             'lasph' : True,
         }
     else:
         print('No default tags set found')
 
     return tagdict
+
+
+def setvasptags(tagdict):
+    vasptags = Vasp(
+        xc = tagdict['xc'],
+        pp = tagdict['pp'],
+        ncore = tagdict['ncore'],
+        encut = tagdict['encut'],
+        nsw = tagdict['nsw'],
+        kpts = tagdict['kpts'],
+        ibrion = tagdict['ibrion'],
+        isif = tagdict['isif'],
+        ediffg = tagdict['ediffg'],
+        isym = tagdict['isym'],
+        lreal = tagdict['lreal'],
+        lcharg = tagdict['lcharg'],
+        lwave = tagdict['lwave'],
+        ivdw = tagdict['ivdw'],
+        vdw_s6 = tagdict['vdw_s6'],
+        lasph = tagdict['lasph'],
+        )
+
+    return vasptags
 
 
 def getenergy(atoms, name, vasptags, env):
@@ -229,12 +260,13 @@ def getenergy(atoms, name, vasptags, env):
 
 
 class make_surface():
-    def __init__(self, ele):
+    def __init__(self, ele, xc):
         # https://periodictable.com/Properties/A/LatticeConstants.html
         self.ele = ele
+        self.xc = xc
         defprops = {
-            'Cu' : ['fcc', 3.6149, 0],
-            # 'Cu' : ['hcp', 3.6149, 5],  # for test
+            # 'Cu' : ['fcc', 3.6149, 0],
+            'Cu' : ['hcp', 3.6149, 5],  # for test
             'Pt' : ['fcc', 3.9242, 0],
             'Ag' : ['fcc', 4.0853, 0],
             'Pd' : ['fcc', 3.8907, 0],
@@ -268,7 +300,7 @@ class make_surface():
 
         return atom
 
-    def calcLC(self, xc, env='spacom'):
+    def calcLC(self, env='spacom'):
         volumes = []
         energies = []
         cells = []
@@ -277,7 +309,7 @@ class make_surface():
         filename = self.ele + '.traj'
         traj = Trajectory(filename, 'w')
         
-        tagdict = getdefaultvasptags(xc)
+        tagdict = getdefaultvasptags(self.xc)
         kpoints = getkpts(atom)
         vasptags = Vasp(
             xc = tagdict['xc'],
@@ -327,7 +359,7 @@ class make_surface():
             a = (v0/2.0)**(1.0/3.0)*2.0
 
             f = open('result.txt', 'a')
-            f.write('{0}, {1}, {2}\n'.format(self.ele, xc,str(a)))
+            f.write('{0}, {1}, {2}\n'.format(self.ele, self.xc, str(a)))
             f.close()
 
             self.a = a
@@ -367,7 +399,7 @@ class make_surface():
             a, c = np.linalg.solve(p2.T, -p1)
 
             f = open('result.txt', 'a')
-            f.write('{0}, {1}, {2}, {3}\n'.format(self.ele, xc, str(a),str(c)))
+            f.write('{0}, {1}, {2}, {3}\n'.format(self.ele, self.xc, str(a), str(c)))
             f.close()
 
             self.a = a
@@ -375,7 +407,33 @@ class make_surface():
 
             return a, c
 
-    def make_surface_from_bulk(self, unitlength, height):
+    def make_surface(self, face, unitlength, layers):
+        if self.structure == 'fcc':
+            if face == '100':
+                atoms = fcc100(self.ele, a=self.a, 
+                    size=(unitlength, unitlength, layers), 
+                    vacuum=10.0)
+            elif face == '111':
+                atoms = fcc111(self.ele, a=self.a,
+                    size=(unitlength, unitlength, layers), 
+                    vacuum=10.0)    
+
+        elif self.structure == 'hcp':
+            if face == '0001':   
+                atoms = hcp0001(self.ele, a=self.a, c=self.c,
+                size=(unitlength, unitlength, layers),
+                vacuum=10.0)
+            else:
+                print('This surface is currently unavailable')
+
+        name = self.ele + '_' + face + '_u' + str(unitlength) + '_' + self.xc + '.traj'
+        trajpath = initpath + str(name) 
+        atoms.write(trajpath)
+
+        return atoms
+
+
+    def make_surface_from_bulk(self, face, unitlength, height):
         atom = self.createbulk(self.a, self.c)
         atom.pbc[2] = False
 
@@ -383,6 +441,11 @@ class make_surface():
         atoms.center(vacuum=10, axis=2)
 
         atoms = self.settag(atoms)
+
+        name = self.ele + '_' + face + '_u' + str(unitlength) + '_' + self.xc + '.traj'
+        trajpath = initpath + str(name) 
+        atoms.write(trajpath)
+
         return atoms
 
 
@@ -394,4 +457,5 @@ class make_surface():
             for j in range(len(poslis)):
                 if atoms[i].position[2] == poslis[j]:
                     atoms[i].tag = len(poslis) - j
+
         return atoms

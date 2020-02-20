@@ -21,23 +21,9 @@ for r in dist:
     nb = getnbands(atoms, 2) # default value is 0.5
 
     tagdict = getdefaultvasptags('RPBE')
-    vasptags = Vasp(
-        xc = tagdict['xc'],
-        pp = tagdict['pp'],
-        ncore = tagdict['ncore'],
-        encut = tagdict['encut'],
-        nsw = tagdict['nsw'],
-        kpts = kpoints,
-        ibrion = tagdict['ibrion'],
-        isif = tagdict['isif'],
-        ediffg = tagdict['ediffg'],
-        isym = tagdict['isym'],
-        lreal = tagdict['lreal'],
-        lcharg = tagdict['lcharg'],
-        lwave = tagdict['lwave'],
-        ivdw = tagdict['ivdw'],
-        lasph = tagdict['lasph'],
-        )                                 
+    tagdict['kpts'] = kpoints
+    vasptags = setvasptags(tagdict)
+
 
 
     ### Get energy ###
