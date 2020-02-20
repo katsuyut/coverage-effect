@@ -210,10 +210,10 @@ def getenergy(atoms, name, vasptags, env):
         atomslist = []
         for atoms in read('vasprun.xml', ':'):
             catoms = atoms.copy()
-            catoms = catoms[calc.resort]
+            catoms = catoms[vasptags.resort]
             catoms.set_calculator(SPC(catoms,
                                       energy=atoms.get_potential_energy(),
-                                      forces=atoms.get_forces()[calc.resort]))
+                                      forces=atoms.get_forces()[vasptags.resort]))
             atomslist += [catoms]
 
         # Write a traj file for the optimization
@@ -227,7 +227,7 @@ def getenergy(atoms, name, vasptags, env):
     return e_atoms
 
 
-def getLC(atoms, vaspset, env='spacom'):
+def getLC(atoms, vaspvasptagsset, env='spacom'):
     volumes = []
     energies = []
     cells = []
@@ -236,8 +236,6 @@ def getLC(atoms, vaspset, env='spacom'):
     
     for x in np.linspace(0.95, 1.05, 5):
         atoms.set_cell(cell * x, scale_atoms=True)
-
-        calc = vaspset
         
         if env == 'local':
             atoms.set_calculator(EMT())
@@ -245,7 +243,7 @@ def getLC(atoms, vaspset, env='spacom'):
             dyn = QuasiNewton(atoms)
             dyn.run(fmax=0.05)
         elif env == 'spacom':
-            atoms.set_calculator(calc)
+            atoms.set_calculator(vasptags)
 
         try:
             atoms.get_potential_energy()

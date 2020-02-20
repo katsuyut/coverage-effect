@@ -44,7 +44,7 @@ vasptags = Vasp(
     ivdw = tagdict['ivdw'],
     lasph = tagdict['lasph'],
     )
-print(tagdict['ibrion'])
+
 ### Get energy ###
 if query(name, env) != 'No file':
     atoms = query(name, env)
