@@ -228,41 +228,7 @@ def getenergy(atoms, name, vasptags, env):
     return e_atoms
 
 
-def getLC(atoms, vasptags, env='spacom'):
-    volumes = []
-    energies = []
-    cells = []
-
-    cell = atoms.get_cell()
-    
-    for x in np.linspace(0.95, 1.05, 5):
-        atoms.set_cell(cell * x, scale_atoms=True)
-        
-        if env == 'local':
-            atoms.set_calculator(EMT())
-
-            dyn = QuasiNewton(atoms)
-            dyn.run(fmax=0.05)
-        elif env == 'spacom':
-            atoms.set_calculator(vasptags)
-
-        try:
-            atoms.get_potential_energy()
-            volumes.append(atoms.get_volume())
-            energies.append(atoms.get_potential_energy())
-            cells.append(atoms.get_cell())
-
-        except:
-            print('Error while calculating bulk energy!')
-            
-    eos = EquationOfState(volumes, energies)
-    v0, e0, B = eos.fit()
-    latticeconstant = (v0/2.0)**(1.0/3.0)*2.0
-
-    return latticeconstant
-
-
-class agetLC():
+class getLC():
     def __init__(self, ele):
         # https://periodictable.com/Properties/A/LatticeConstants.html
         self.ele = ele
