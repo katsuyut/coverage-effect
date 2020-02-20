@@ -402,7 +402,9 @@ class make_surface():
             elif face == '111':
                 atoms = fcc111(self.ele, a=self.a,
                     size=(unitlength, unitlength, layers), 
-                    vacuum=10.0)    
+                    vacuum=10.0)  
+            else:
+                print('This surface is currently unavailable')
 
         elif self.structure == 'hcp':
             if face == '0001':
@@ -418,7 +420,6 @@ class make_surface():
 
         return atoms
 
-
     def make_surface_from_bulk(self, face, unitlength, height):
         atom = self.createbulk(self.a, self.c)
         atom.pbc[2] = False
@@ -433,7 +434,6 @@ class make_surface():
         atoms.write(trajpath)
 
         return atoms
-
 
     def settag(self, atoms):
         poslis = list(set(atoms.get_positions()[:,2]))

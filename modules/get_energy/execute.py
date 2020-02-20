@@ -14,7 +14,7 @@ for file in read_data:
     com1 = 'mkdir ' + name[0:-5]
     os.system(com1)
     
-    com2 = 'cp get_energy.py submitjob.pbs ' + name[0:-5] + '/'
+    com2 = 'cp get_energy.py get_inter_energy.py submitjob.pbs ' + name[0:-5] + '/'
     os.system(com2)
 
     com3_1 = 'cd ' + name[0:-5] + '\n'
