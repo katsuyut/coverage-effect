@@ -7,7 +7,7 @@ from ase.io import read, write
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-
+from MAUtil import *
 
 def getNiGa(a):
     b = a * 2**0.5
@@ -44,6 +44,12 @@ def getCoPt3(a):
                        )
     
     return atoms
+
+
+class make_multiple_adsorbates_adsorbed_surface():
+    def __init__(self,):
+
+
 
 
 def getadsites(atoms, symm_reduce):

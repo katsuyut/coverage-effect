@@ -311,7 +311,7 @@ class make_surface():
         traj = Trajectory(filename, 'w')
 
         kpoints = getkpts(atom)
-        tagdict = getdefaultvasptags('RPBE')
+        tagdict = getdefaultvasptags(xc)
         tagdict['kpts'] = kpoints
         vasptags = setvasptags(tagdict)
 
