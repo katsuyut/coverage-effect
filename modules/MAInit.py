@@ -46,11 +46,23 @@ def getCoPt3(a):
     return atoms
 
 
-class make_multiple_adsorbates_adsorbed_surface():
-    def __init__(self,):
+class make_adsorbed_surface():
+    """
+    Assuming that atoms and adsorbates are in init folder
+    Name is a filename of trajectory file withought extention
+    """
+    def __init__(self, surfacename, adsorbatename, env='spacom'):
+        self.surfacename = surfacename
+        self.adsorbatename = adsorbatename
+        self.initatoms = init_query(name+'.traj', env)
+        self.adsorbate = init_query(name+'.traj', env)
+
+    def make_surface(self, ):
+        bareatoms, poslis = removemolecule(atoms, ['C', 'O'])
 
 
-
+def get_all_elements(atoms):
+    
 
 def getadsites(atoms, symm_reduce):
     '''

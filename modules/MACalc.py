@@ -65,7 +65,7 @@ def getdefaultvasptags(xc = 'RPBE'):
     """
     Default is same as used in GASpy (xc=RPBE)
     If xc is specified, a different set of tags is returned
-    Available xcs are :RPBE, RPBE-D2, vdW-DF(revPBE-DF), optB88-vdW, vdW-DF2 (rPW86-vdw), BEEF-vdw
+    Available xcs are :RPBE, RPBE-D2, vdW-DF(revPBE-DF), optB88-vdW, vdW-DF2(rPW86-vdw), BEEF-vdw
 
     reference
     https://wiki.fysik.dtu.dk/ase/ase/calculators/vasp.html
@@ -259,7 +259,7 @@ def getenergy(atoms, name, vasptags, env):
     return e_atoms
 
 
-class make_surface():
+class make_baresurface():
     def __init__(self, ele):
         # https://periodictable.com/Properties/A/LatticeConstants.html
         self.ele = ele
@@ -284,7 +284,7 @@ class make_surface():
         self.a = None
         self.c = None
 
-    def createbulk(self, a0, c0):
+    def create_bulk(self, a0, c0):
         if self.ele not in self.defprops.keys():
             print('This materials is not available. Add to props.')
             return None
@@ -306,7 +306,7 @@ class make_surface():
         energies = []
         cells = []
 
-        atom = self.createbulk(self.a0, self.c0)
+        atom = self.create_bulk(self.a0, self.c0)
         filename = self.ele + '.traj'
         traj = Trajectory(filename, 'w')
 
@@ -356,7 +356,7 @@ class make_surface():
         elif self.structure == 'hcp':
             for a in self.a0 * np.linspace(1-self.eps, 1+self.eps, 5):
                 for c in self.c0 * np.linspace(1-self.eps, 1+self.eps, 5):
-                    atom = self.createbulk(a, c)
+                    atom = self.create_bulk(a, c)
 
                     if env == 'local':
                         atom.set_calculator(EMT())
@@ -393,7 +393,7 @@ class make_surface():
 
             return a, c
 
-    def make_surface(self, face, unitlength, layers):
+    def make_surface_pymatgen(self, face, unitlength, layers):
         if self.structure == 'fcc':
             if face == '100':
                 atoms = fcc100(self.ele, a=self.a, 
@@ -421,7 +421,7 @@ class make_surface():
         return atoms
 
     def make_surface_from_bulk(self, face, unitlength, height):
-        atom = self.createbulk(self.a, self.c)
+        atom = self.create_bulk(self.a, self.c)
         atom.pbc[2] = False
 
         atoms = atom.repeat([unitlength, unitlength, height])
