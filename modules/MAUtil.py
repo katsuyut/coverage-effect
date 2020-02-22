@@ -1,5 +1,11 @@
 import numpy as np
-import sys, os, random, itertools, warnings, math, copy
+import sys
+import os
+import random
+import itertools
+import warnings
+import math
+import copy
 import matplotlib.pyplot as plt
 from ase import Atoms, Atom
 from ase.io import read, write
@@ -8,6 +14,7 @@ from ase.visualize import view
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
+
 
 def query(name, env='spacom'):
     path = databasepath + name
@@ -19,7 +26,7 @@ def query(name, env='spacom'):
         return atoms
     except IOError as e:
         return 'No file'
-    
+
 
 def init_query(name, env='spacom'):
     path = initpath + name

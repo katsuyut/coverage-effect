@@ -1,5 +1,11 @@
 import numpy as np
-import sys, os, random, itertools, warnings, math, copy
+import sys
+import os
+import random
+import itertools
+import warnings
+import math
+import copy
 from ase import Atoms, Atom
 from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate
 from ase.io import read, write
@@ -14,12 +20,13 @@ from MAInit import *
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
 
+
 def getmaxdiff(name):
     name = name.split('.traj')[0]
     name = name + '_all.traj'
     path = databasepath + name
     traj = Trajectory(path)
-    
+
     diff = abs(traj[-1].positions - traj[0].positions)
     maxdiff = np.max(diff)
 
@@ -39,24 +46,32 @@ def getadsposinfo(file, flag=0):
     sites0 = [list(i) for i in sites0_]
     group = creategroup(bareatoms, sites0)
     cell = bareatoms.cell
-    
+
     def assigngroup(groups, poslis):
         for i in range(len(poslis)):
             mindist = 10000
             assign = None
             for j in range(len(group)):
                 for k in range(len(group[j])):
-#                     dist = np.linalg.norm(poslis[i][:2] - group[j][k][:2])
+                    #                     dist = np.linalg.norm(poslis[i][:2] - group[j][k][:2])
                     dist = min(np.linalg.norm(poslis[i][:2] - group[j][k][:2]),
-                               np.linalg.norm((poslis[i] + cell[0])[:2] - group[j][k][:2]),
-                               np.linalg.norm((poslis[i] - cell[0])[:2] - group[j][k][:2]),
-                               np.linalg.norm((poslis[i] + cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm((poslis[i] - cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm((poslis[i] + cell[0] + cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm((poslis[i] + cell[0] - cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm((poslis[i] - cell[0] + cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm((poslis[i] - cell[0] - cell[1])[:2] - group[j][k][:2])
-                              )
+                               np.linalg.norm(
+                                   (poslis[i] + cell[0])[:2] - group[j][k][:2]),
+                               np.linalg.norm(
+                                   (poslis[i] - cell[0])[:2] - group[j][k][:2]),
+                               np.linalg.norm(
+                                   (poslis[i] + cell[1])[:2] - group[j][k][:2]),
+                               np.linalg.norm(
+                                   (poslis[i] - cell[1])[:2] - group[j][k][:2]),
+                               np.linalg.norm(
+                                   (poslis[i] + cell[0] + cell[1])[:2] - group[j][k][:2]),
+                               np.linalg.norm(
+                                   (poslis[i] + cell[0] - cell[1])[:2] - group[j][k][:2]),
+                               np.linalg.norm(
+                                   (poslis[i] - cell[0] + cell[1])[:2] - group[j][k][:2]),
+                               np.linalg.norm(
+                                   (poslis[i] - cell[0] - cell[1])[:2] - group[j][k][:2])
+                               )
                     if dist < mindist:
                         mindist = dist
                         assign = j
@@ -65,15 +80,15 @@ def getadsposinfo(file, flag=0):
 
     igroups = []
     igroups = assigngroup(igroups, iposlis)
-    
+
     if flag == 0:
         ratoms = query(file, 'spacom')
         bareatoms, rposlis = removemolecule(ratoms, ['C', 'O'])
         rgroups = []
         rgroups = assigngroup(rgroups, rposlis)
-                
+
         return igroups, iposlis, rgroups, rposlis
-    
+
     return igroups, iposlis
 
 
@@ -120,7 +135,8 @@ def fingerprint_adslab_multiads(atoms):
         for Krypton_index in Krypton_indexes:
             # We have a standard and a loose Voronoi neighbor finder for various
             # purposes
-            vnn = VoronoiNN(allow_pathological=True, tol=0.6, cutoff=10) # originally tol=0.8
+            vnn = VoronoiNN(allow_pathological=True, tol=0.6,
+                            cutoff=10)  # originally tol=0.8
             vnn_loose = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
 
             # Find the coordination
@@ -130,11 +146,14 @@ def fingerprint_adslab_multiads(atoms):
             # Find the neighborcoord
             neighborcoord = []
             for neighbor_info in nn_info:
-                if neighbor_info['site'].species_string != 'Kr': # Need this to exclude just neighbor adsorbate to recognize as bonding atom
+                # Need this to exclude just neighbor adsorbate to recognize as bonding atom
+                if neighbor_info['site'].species_string != 'Kr':
                     # Get the coordination of this neighbor atom, e.g., 'Cu-Cu'
                     neighbor_index = neighbor_info['site_index']
-                    neighbor_nn_info = vnn_loose.get_nn_info(struct, n=neighbor_index)
-                    neighbor_coord, cc_indexes = __get_coordination_string_mod(neighbor_nn_info)
+                    neighbor_nn_info = vnn_loose.get_nn_info(
+                        struct, n=neighbor_index)
+                    neighbor_coord, cc_indexes = __get_coordination_string_mod(
+                        neighbor_nn_info)
                     # Prefix the coordination of this neighbor atom with the identity
                     # of the neighber, e.g. 'Cu:Cu-Cu'
                     neighbor_element = neighbor_info['site'].species_string
@@ -143,22 +162,23 @@ def fingerprint_adslab_multiads(atoms):
 
             # Find the nextnearestcoordination
             nn_info_loose = vnn_loose.get_nn_info(struct, n=Krypton_index)
-            nextnearestcoordination = __get_coordination_string_mod(nn_info_loose)
-            
+            nextnearestcoordination = __get_coordination_string_mod(
+                nn_info_loose)
+
             results.append({'adsorbate_index': Krypton_index,
                             'coordination': [coordination, cindex],
                             'neighborcoord': [neighborcoord, cc_indexes],
                             'nextnearestcoordination': nextnearestcoordination})
         return results
-        
+
     # If we get some QHull or ValueError, then just assume that the adsorbate desorbed
     except (QhullError, ValueError, UnboundLocalError):
         results.append({'coordination': '',
-                'neighborcoord': '',
-                'nextnearestcoordination': ''})
+                        'neighborcoord': '',
+                        'nextnearestcoordination': ''})
         return results
-    
-                           
+
+
 def __get_coordination_string_mod(nn_info):
     '''
     This helper function takes the output of the `VoronoiNN.get_nn_info` method
@@ -174,12 +194,13 @@ def __get_coordination_string_mod(nn_info):
                          for neighbor_info in nn_info
                          if neighbor_info['site'].species_string != 'Kr']
     coordination = '-'.join(sorted(coordinated_atoms))
-    
+
     coordinated_indexes = [neighbor_info['site_index']
-                         for neighbor_info in nn_info
-                         if neighbor_info['site'].species_string != 'Kr']
+                           for neighbor_info in nn_info
+                           if neighbor_info['site'].species_string != 'Kr']
 
     return coordination, coordinated_indexes
+
 
 def get_bonding_matrix(atoms):
     '''
@@ -210,7 +231,7 @@ def get_bonding_matrix(atoms):
     '''
     # Replace the adsorbate[s] with a single Krypton atom at the first binding
     # site. We need the Krypton there so that pymatgen can find its
-    # coordination.  
+    # coordination.
     atoms, binding_positions = removemolecule(atoms, 'CO')
     nads = len(binding_positions)
     for i in reversed(range(nads)):
@@ -221,12 +242,13 @@ def get_bonding_matrix(atoms):
         if atom.symbol == 'Kr':
             Krypton_indexes.append(atom.index)
     struct = AseAtomsAdaptor.get_structure(atoms)
-    
+
     try:
         for atom in atoms:
             # We have a standard and a loose Voronoi neighbor finder for various
             # purposes
-            vnn = VoronoiNN(allow_pathological=True, tol=0.6, cutoff=10) # originally tol=0.8
+            vnn = VoronoiNN(allow_pathological=True, tol=0.6,
+                            cutoff=10)  # originally tol=0.8
             vnn_loose = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
 
             # Find the coordination
@@ -240,13 +262,14 @@ def get_bonding_matrix(atoms):
             for cindex in cindexes:
                 b_mat[atom.index][cindex] = 1
                 b_mat[cindex][atom.index] = 1
-            
+
         return b_mat, nads
-        
+
     # If we get some QHull or ValueError, then just assume that the adsorbate desorbed
     except (QhullError, ValueError):
         return None
-    
+
+
 def get_modified_bonding_matrix(atoms):
     '''
     This function will fingerprint a slab+adsorbate atoms object for you.
@@ -276,7 +299,7 @@ def get_modified_bonding_matrix(atoms):
     '''
     # Replace the adsorbate[s] with a single Krypton atom at the first binding
     # site. We need the Krypton there so that pymatgen can find its
-    # coordination.  
+    # coordination.
     atoms, binding_positions = removemolecule(atoms, 'CO')
     nads = len(binding_positions)
     for i in reversed(range(nads)):
@@ -287,12 +310,13 @@ def get_modified_bonding_matrix(atoms):
         if atom.symbol == 'Kr':
             Krypton_indexes.append(atom.index)
     struct = AseAtomsAdaptor.get_structure(atoms)
-    
+
     try:
         for atom in atoms:
             # We have a standard and a loose Voronoi neighbor finder for various
             # purposes
-            vnn = VoronoiNN(allow_pathological=True, tol=0.6, cutoff=10) # originally tol=0.8
+            vnn = VoronoiNN(allow_pathological=True, tol=0.6,
+                            cutoff=10)  # originally tol=0.8
             vnn_loose = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
 
             # Find the coordination
@@ -305,24 +329,26 @@ def get_modified_bonding_matrix(atoms):
             for cindex in cindexes:
                 b_mat[atom.index][cindex] = 1/len(cindexes)
                 b_mat[cindex][atom.index] = 1/len(cindexes)
-            
+
         return b_mat, nads
-        
+
     # If we get some QHull or ValueError, then just assume that the adsorbate desorbed
     except (QhullError, ValueError):
         return None
-    
+
+
 def get_repeated_atoms(atoms, repeat):
     cpatoms = copy.deepcopy(atoms)
     for i in reversed(range(len(cpatoms))):
         if cpatoms[i].tag == 3 or cpatoms[i].tag == 4:
             cpatoms.pop(i)
-    cpatoms = cpatoms.repeat([repeat,repeat,1])
+    cpatoms = cpatoms.repeat([repeat, repeat, 1])
     return cpatoms
 
+
 def get_old_number_matrix(b_mat, nads, repeat):
-#     b_matlis = []
-#     sumb_matlis = []
+    #     b_matlis = []
+    #     sumb_matlis = []
     newb_mat = copy.deepcopy(b_mat)
 #     sumb_mat = 0
     done = np.zeros([nads//repeat**2])
@@ -333,23 +359,28 @@ def get_old_number_matrix(b_mat, nads, repeat):
 #         b_matlis.append(newb_mat)
 #         sumb_mat = sumb_mat + newb_mat
 #         sumb_matlis.append(sumb_mat)
-        newb_matCO = (newb_mat - np.diag(np.diag(newb_mat)))[-nads:,-nads:] # extract related adsorbate and non-diagonal terms
-        newb_matCO = newb_matCO[nads//repeat**2*4:nads//repeat**2*5] # examinimg only center one is sufficient
+        # extract related adsorbate and non-diagonal terms
+        newb_matCO = (newb_mat - np.diag(np.diag(newb_mat)))[-nads:, -nads:]
+        # examinimg only center one is sufficient
+        newb_matCO = newb_matCO[nads//repeat**2*4:nads//repeat**2*5]
 
         for j in range(nads//repeat**2):
             if done[j] == 0:
                 if not (newb_matCO[j] == 0).all():
                     done[j] = 1
-                    nnearestbonding = np.max(np.sum(newb_matCO[j:nads:nads//repeat**2,:], axis=1))
+                    nnearestbonding = np.max(
+                        np.sum(newb_matCO[j:nads:nads//repeat**2, :], axis=1))
 #                     print('adsorbate {} has {} nearest adsorbate at {}th neighbor'.format(j,nnearestbonding,i))
 #                     print(newb_matCO[j:nads:nads//repeat**2,:])
-                    results.append([j,i,nnearestbonding])
-                
+                    results.append([j, i, nnearestbonding])
+
 #         print('')
         i += 1
-        if (done == 1).all() or i==6:
+        if (done == 1).all() or i == 6:
             break
-    return np.array(results) # [adsorbate_index, distance, # of nearest adsorbate]
+    # [adsorbate_index, distance, # of nearest adsorbate]
+    return np.array(results)
+
 
 def get_number_matrix(b_mat, nads, repeat):
     '''
@@ -363,16 +394,19 @@ def get_number_matrix(b_mat, nads, repeat):
         terminate = 4
     else:
         terminate = 5
-    
+
     newb_mat = copy.deepcopy(b_mat)
     done = np.zeros([nads//repeat**2])
     results = []
     i = 2
-    mask = np.ones(np.shape(newb_mat[nads//repeat**2*(math.floor(repeat**2/2.0)):nads//repeat**2*(math.ceil(repeat**2/2.0)),-nads:]))
+    mask = np.ones(np.shape(newb_mat[nads//repeat**2*(math.floor(
+        repeat**2/2.0)):nads//repeat**2*(math.ceil(repeat**2/2.0)), -nads:]))
     while True:
         newb_mat = newb_mat @ b_mat
-        newb_matCO = (newb_mat - np.diag(np.diag(newb_mat)))[-nads:,-nads:] # extract related adsorbate and non-diagonal terms
-        newb_matCO = newb_matCO[nads//repeat**2*(math.floor(repeat**2/2.0)):nads//repeat**2*(math.ceil(repeat**2/2.0))] # examinimg only center one is sufficient
+        # extract related adsorbate and non-diagonal terms
+        newb_matCO = (newb_mat - np.diag(np.diag(newb_mat)))[-nads:, -nads:]
+        newb_matCO = newb_matCO[nads//repeat**2*(math.floor(repeat**2/2.0)):nads//repeat**2*(
+            math.ceil(repeat**2/2.0))]  # examinimg only center one is sufficient
 
     #     print('orig', newb_matCO)
     #     print(mask)
@@ -380,11 +414,11 @@ def get_number_matrix(b_mat, nads, repeat):
 #         print('mod',masked)
         mask = (newb_matCO == 0)
         nnearestbonding = np.sum(masked)
-        results.append([i,nnearestbonding])
+        results.append([i, nnearestbonding])
 
         i += 1
     #     if (done == 1).all() or i==6:
     #         break
-        if i==terminate:
+        if i == terminate:
             break
-    return np.array(results) # [distance, # of nearest adsorbate]
+    return np.array(results)  # [distance, # of nearest adsorbate]
