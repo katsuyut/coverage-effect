@@ -23,12 +23,12 @@ if 3 in set(atoms.get_tags()): # set constraint only on surface calc
     
     
 ### Set vasp ###    
-kpoints = getkpts(atoms)    
-nb = getnbands(atoms, 2) # default value is 0.5
+kpoints = get_kpts(atoms)    
+nb = get_nbands(atoms, 2) # default value is 0.5
 
-tagdict = getdefaultvasptags('RPBE')
+tagdict = get_default_vasp_tags('RPBE')
 tagdict['kpts'] = kpoints
-vasptags = setvasptags(tagdict)
+vasptags = set_vasp_tags(tagdict)
 
 ### Get energy ###
 if query(name, env) != 'No file':
@@ -37,7 +37,7 @@ if query(name, env) != 'No file':
     e_atoms = 'Already in directory'
 else:
     atoms.set_calculator(vasptags)
-    e_atoms = getenergy(atoms, name[0:-5], vasptags, env)
+    e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
 
 print('{0}, {1}'.format(name ,e_atoms))
 f = open('result.txt', 'a')

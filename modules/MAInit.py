@@ -20,7 +20,7 @@ databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
 
 
-def getNiGa(a):
+def get_NiGa(a):
     b = a * 2**0.5
     x = a/2
     y = b/2
@@ -39,7 +39,7 @@ def getNiGa(a):
     return atoms
 
 
-def getCoPt3(a):
+def get_CoPt3(a):
     x = a/2
     y = a/2
     z = a/2
@@ -81,10 +81,10 @@ def remove_adsorbate(atoms, molecule):
 
 
 def create_site_group(baresurface):
-    redbareadsites = getadsites(baresurface, True)
+    redbareadsites = get_adsorption_sites(baresurface, True)
     redbareadsites = np.array(redbareadsites['all'])
 
-    allbareadsites = getadsites(baresurface, False)
+    allbareadsites = get_adsorption_sites(baresurface, False)
     allbareadsites = np.array(allbareadsites['all'])
 
     group = [[list(item)] for item in redbareadsites]
@@ -105,7 +105,7 @@ def create_site_group(baresurface):
     return group
 
 
-def getadsites(atoms, symm_reduce):
+def get_adsorption_sites(atoms, symm_reduce):
     '''
     Given surface, return sites dictionary.
     '''
@@ -141,7 +141,7 @@ def check_if_same(baresurface, sites, sitesset):
             frsites = struct.lattice.get_fractional_coords(sites[i])
             froperatedsites.append(list(op.operate(frsites)))
         froperatedsites.sort()
-        modfropsites = modpos(froperatedsites)
+        modfropsites = modify_possitions(froperatedsites)
 
         for used in frsitesset:
             used = [list(item) for item in used]
@@ -151,7 +151,7 @@ def check_if_same(baresurface, sites, sitesset):
                     return True
 
 
-def modpos(sites):
+def modify_possitions(sites):
     """
     sites must be 2D array
     """
@@ -172,7 +172,7 @@ def modpos(sites):
     return modsites
 
 
-def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, group, adsorbate):
+def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites, group, adsorbate):
     '''
     Given surface Atom object and all possible attaching site positions, create all possible unique attached Atom object.
     Can exclude by the maximum number of molecules or minimum distance. 
@@ -211,7 +211,7 @@ def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, gro
             add_adsorbate(nextatoms, adsorbate, height, rsites[i][:2])
             nextused.append(rsites[i])
 
-            dist = getmindist(nextused, bareatoms.cell)
+            dist = get_minimum_distance(nextused, bareatoms.cell)
             if dist < mindist:
                 print('Distance {0:.2f} is below {1}'.format(dist, mindist))
                 continue
@@ -261,12 +261,12 @@ def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, gro
                         for k in range(len(group[j])):
                             usedadsites.append(group[j][k])
 
-    redadsites_ = getadsites(atoms, True)['all']
+    redadsites_ = get_adsorption_sites(atoms, True)['all']
     redadsites = [list(i) for i in redadsites_]
     initmol = len(initadsites)
 
     recursive(atoms, redadsites, list(initadsites), initmol, allused, count)
-    mindistlis = getmindistlist(allused, bareatoms.cell)
+    mindistlis = get_minimum_distance_list(allused, bareatoms.cell)
 
     numdict = {}
     for site in allused:
@@ -281,7 +281,7 @@ def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, gro
     return allatoms, mindistlis, numdict, molenum
 
 
-def getmindist(comb, cell):
+def get_minimum_distance(comb, cell):
     '''
     Given one combination of adsorption sites(2d-array), return minimum distance.
     '''
@@ -303,20 +303,20 @@ def getmindist(comb, cell):
     return mindist
 
 
-def getmindistlist(combs, cell):
+def get_minimum_distance_list(combs, cell):
     '''
     combs: array of positions, or double array of positions
     '''
     mindistlis = []
     for i in range(len(combs)):
         if type(combs[0][0][0]) == np.float64:
-            mindist = getmindist(combs[i], cell)
+            mindist = get_minimum_distance(combs[i], cell)
             mindistlis.append(mindist)
 
         else:
             for j in range(len(combs[i])):
                 if combs[i][j] != 0:
-                    mindist = getmindist(combs[i][j], cell)
+                    mindist = get_minimum_distance(combs[i][j], cell)
                     mindistlis.append(mindist)
 
     return mindistlis
@@ -337,7 +337,7 @@ class make_adsorbed_surface():
     def make_surface(self, maxmole, mindist):
         adseles = get_all_elements(self.adsorbate)
         baresurface, initadsites = remove_adsorbate(self.initatoms, adseles)
-        bareadsites = getadsites(baresurface, False)
+        bareadsites = get_adsorption_sites(baresurface, False)
 
         allbareadsites = np.array(bareadsites['all'])
         group = create_site_group(baresurface)
@@ -352,7 +352,7 @@ class make_adsorbed_surface():
         inuse = allbareadsites[ind]
 
         allatoms, mindistlis, numdict, molenum \
-            = getuniqueatoms(self.initatoms, baresurface, adsites, maxmole, mindist, initadsites, group, self.adsorbate)
+            = get_unique_surface(self.initatoms, baresurface, adsites, maxmole, mindist, initadsites, group, self.adsorbate)
 
         self.allatoms = allatoms
         self.mindistlis = mindistlis
@@ -448,14 +448,14 @@ class make_adsorbed_surface():
 #         listoftypes.append(checksitetype(positions[i], sites))
 #     uniquecomb = [list(x) for x in set(tuple(x) for x in listoftypes)]
 
-#     mindistlist = getmindistlist(positions, cell)
+#     mindistlist = get_minimum_distance_list(positions, cell)
 #     maxmindist = int(np.ceil(max(mindistlist)/0.5)-3)
 #     calccombs = [[0 for i in range(maxmindist + 1)]
 #                  for i in range(len(uniquecomb))]
 
 #     for i in range(len(positions)):
 #         comb = checksitetype(positions[i], sites)
-#         dist = getmindist(positions[i], cell)
+#         dist = get_minimum_distance(positions[i], cell)
 
 #         ind0 = uniquecomb.index(comb)
 #         ind1 = int(np.ceil(dist/0.5)-3)

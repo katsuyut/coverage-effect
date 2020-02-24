@@ -24,7 +24,7 @@ initpath = '/home/katsuyut/research/coverage-effect/init/'
 zvalpath = '/home/katsuyut/research/coverage-effect/zval.txt'
 
 
-def getnbands(atoms, f=0.5):
+def get_nbands(atoms, f=0.5):
     file = open(zvalpath, 'r')
     combs = file.read().split('\n')
     electrondict = {}
@@ -52,7 +52,7 @@ def getnbands(atoms, f=0.5):
     return nbands
 
 
-def getkpts(atoms):
+def get_kpts(atoms):
     c = 30
     cell = atoms.get_cell()
     kpts = []
@@ -68,7 +68,7 @@ def getkpts(atoms):
     return kpts
 
 
-def getdefaultvasptags(xc='RPBE'):
+def get_default_vasp_tags(xc='RPBE'):
     """
     Default is same as used in GASpy (xc=RPBE)
     If xc is specified, a different set of tags is returned
@@ -203,7 +203,7 @@ def getdefaultvasptags(xc='RPBE'):
     return tagdict
 
 
-def setvasptags(tagdict):
+def set_vasp_tags(tagdict):
     vasptags = Vasp(
         xc=tagdict['xc'],
         pp=tagdict['pp'],
@@ -226,7 +226,7 @@ def setvasptags(tagdict):
     return vasptags
 
 
-def getenergy(atoms, name, vasptags, env):
+def get_energy(atoms, name, vasptags, env):
     trajpath = databasepath + str(name) + '.traj'
     trajpath_all = databasepath + str(name) + '_all.traj'
 
@@ -306,7 +306,7 @@ class make_baresurface():
 
         return atom
 
-    def calcLC(self, xc='RPBE', env='spacom'):
+    def calc_LC(self, xc='RPBE', env='spacom'):
         self.xc = xc
 
         volumes = []
@@ -317,10 +317,10 @@ class make_baresurface():
         filename = self.ele + '.traj'
         traj = Trajectory(filename, 'w')
 
-        kpoints = getkpts(atom)
-        tagdict = getdefaultvasptags(xc)
+        kpoints = get_kpts(atom)
+        tagdict = get_default_vasp_tags(xc)
         tagdict['kpts'] = kpoints
-        vasptags = setvasptags(tagdict)
+        vasptags = set_vasp_tags(tagdict)
 
         ### fcc ###
         if self.structure == 'fcc':
@@ -431,7 +431,7 @@ class make_baresurface():
         atoms = atom.repeat([unitlength, unitlength, height])
         atoms.center(vacuum=10, axis=2)
 
-        atoms = self.settag(atoms)
+        atoms = self.set_tag(atoms)
 
         name = self.ele + '_' + face + '_u' + \
             str(unitlength) + '_' + self.xc + '.traj'
@@ -440,7 +440,7 @@ class make_baresurface():
 
         self.atoms = atoms
 
-    def settag(self, atoms):
+    def set_tag(self, atoms):
         poslis = list(set(atoms.get_positions()[:, 2]))
         poslis.sort()
 

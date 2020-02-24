@@ -33,5 +33,5 @@ echo $TMPDIR
 echo $VASP_SCRIPT
 echo $VASP_PP_PATH
 
-python ./get_energy.py $1
-python ./get_inter_energy.py $1
+python ./calc_energy.py $1
+python ./calc_inter_energy.py $1

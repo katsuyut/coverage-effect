@@ -39,7 +39,7 @@ def init_query(name, env='spacom'):
         return 'No file'
 
 
-def getallene():
+def get_all_energy():
     files = os.listdir(databasepath)
 
     for filename in files:

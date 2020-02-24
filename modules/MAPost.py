@@ -21,7 +21,7 @@ databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
 
 
-def getmaxdiff(name):
+def get_maximum_movement(name):
     name = name.split('.traj')[0]
     name = name + '_all.traj'
     path = databasepath + name
@@ -33,7 +33,7 @@ def getmaxdiff(name):
     return maxdiff
 
 
-def getadsposinfo(file, flag=0):
+def get_adsorbates_position_info(file, flag=0):
     '''
     if flag == 0 then calc both init and relaxed
     else calc only init
@@ -47,7 +47,7 @@ def getadsposinfo(file, flag=0):
     group = creategroup(bareatoms, sites0)
     cell = bareatoms.cell
 
-    def assigngroup(groups, poslis):
+    def assign_group(groups, poslis):
         for i in range(len(poslis)):
             mindist = 10000
             assign = None
@@ -79,13 +79,13 @@ def getadsposinfo(file, flag=0):
         return groups
 
     igroups = []
-    igroups = assigngroup(igroups, iposlis)
+    igroups = assign_group(igroups, iposlis)
 
     if flag == 0:
         ratoms = query(file, 'spacom')
         bareatoms, rposlis = removemolecule(ratoms, ['C', 'O'])
         rgroups = []
-        rgroups = assigngroup(rgroups, rposlis)
+        rgroups = assign_group(rgroups, rposlis)
 
         return igroups, iposlis, rgroups, rposlis
 
