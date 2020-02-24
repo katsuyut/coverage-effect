@@ -6,7 +6,7 @@
 #SBATCH --partition=cpu
 #SBATCH --account=ulissi
 #SBATCH --job-name=vasp
-#SBATCH --output=log.log
+#SBATCH --output=vasp.out
 #SBATCH --error=err.err
 #SBATCH --mem-per-cpu=2G
 #SBATCH --exclude=c021,f006

@@ -25,5 +25,3 @@ for ele in elements:
                 adsorbed = make_adsorbed_surface(name, adsname)
                 adsorbed.make_surface(maxmole=4, mindist=2.5)
                 adsorbed.write_trajectory()
-
-
