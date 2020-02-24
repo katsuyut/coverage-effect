@@ -356,8 +356,6 @@ class make_baresurface():
 
             self.a = a
 
-            return a
-
         ### hcp ###
         elif self.structure == 'hcp':
             for a in self.a0 * np.linspace(1-self.eps, 1+self.eps, 5):
@@ -398,8 +396,6 @@ class make_baresurface():
             self.a = a
             self.c = c
 
-            return a, c
-
     def make_surface_pymatgen(self, face, unitlength, layers):
         if self.structure == 'fcc':
             if face == '100':
@@ -426,7 +422,7 @@ class make_baresurface():
         trajpath = initpath + str(name)
         atoms.write(trajpath)
 
-        return atoms
+        self.atoms = atoms
 
     def make_surface_from_bulk(self, face, unitlength, height):
         atom = self.create_bulk(self.a, self.c)
@@ -442,7 +438,7 @@ class make_baresurface():
         trajpath = initpath + str(name)
         atoms.write(trajpath)
 
-        return atoms
+        self.atoms = atoms
 
     def settag(self, atoms):
         poslis = list(set(atoms.get_positions()[:, 2]))

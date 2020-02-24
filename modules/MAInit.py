@@ -6,6 +6,7 @@ import itertools
 import warnings
 import math
 import copy
+import time
 from ase import Atoms, Atom
 from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate
 from ase.constraints import FixAtoms
@@ -14,6 +15,9 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from MAUtil import *
+
+databasepath = '/home/katsuyut/research/coverage-effect/database/'
+initpath = '/home/katsuyut/research/coverage-effect/init/'
 
 
 def getNiGa(a):
@@ -62,7 +66,7 @@ def get_all_elements(atoms):
     return elements
 
 
-def remove_molecule(atoms, molecule):
+def remove_adsorbate(atoms, molecule):
     cpatoms = copy.deepcopy(atoms)
     poslis = []
     for i in reversed(range(len(cpatoms))):
@@ -168,7 +172,7 @@ def modpos(sites):
     return modsites
 
 
-def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, group, molecule):
+def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, group, adsorbate):
     '''
     Given surface Atom object and all possible attaching site positions, create all possible unique attached Atom object.
     Can exclude by the maximum number of molecules or minimum distance. 
@@ -179,6 +183,8 @@ def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, gro
     mindistlis :minimum distance of molecule for each Atom object
     numdict    :dictionary, key=number of attached molecule, value=number of object created
     '''
+    start = time.time()
+
     height = 1.85
     allatoms = []
     allused = []
@@ -189,20 +195,20 @@ def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, gro
     allused = copy.deepcopy(initadsites)
     allused = list(initadsites)
 
-    def recursive(ratoms, rsites, rused, molecules, tmpused, count):
-        molecules += 1
+    def recursive(ratoms, rsites, rused, molnum, tmpused, count):
+        molnum += 1
 
-        if molecules > maxmole:
+        if molnum > maxmole:
             return None
 
         for i in range(len(rsites)):
             nextatoms = copy.deepcopy(ratoms)
             nextused = copy.deepcopy(rused)
-            if molecules == 1:
+            if molnum == 1:
                 tmpused = copy.deepcopy(allused)
 #                 print('Used initialized!')
 
-            add_adsorbate(nextatoms, molecule, height, rsites[i][:2])
+            add_adsorbate(nextatoms, adsorbate, height, rsites[i][:2])
             nextused.append(rsites[i])
 
             dist = getmindist(nextused, bareatoms.cell)
@@ -217,13 +223,14 @@ def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, gro
             allatoms.append(nextatoms)
             allused.append(nextused)
             tmpused.append(nextused)
-            molenum.append(molecules)
+            molenum.append(molnum)
             struct = AseAtomsAdaptor.get_structure(nextatoms)
 
-            # print('{0}-------{1}-------'.format(molecules, nextatoms.symbols))
-            if molecules == initmol+1:
+            # print('{0}-------{1}-------'.format(molnum, nextatoms.symbols))
+            if molnum == initmol+1:
+                print('progress: {}/{}, {:.2f} min'.format(count,
+                                                           len(rsites), (time.time() - start)/60))
                 count += 1
-                print('progress: {}/{}'.format(count, len(rsites)))
 
             try:
                 nextsites = AdsorbateSiteFinder(struct).symm_reduce(adsites)
@@ -243,12 +250,12 @@ def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, gro
                     nextsites.pop(indexlist[j])
 
                 recursive(nextatoms, nextsites, nextused,
-                          molecules, tmpused, count)
+                          molnum, tmpused, count)
 
             except:
                 print('Error!!')
 
-            if molecules == 1:
+            if molnum == 1:
                 for j in range(len(group)):
                     if rsites[i] in group[j]:
                         for k in range(len(group[j])):
@@ -268,7 +275,10 @@ def getuniqueatoms(atoms, bareatoms, adsites, maxmole, mindist, initadsites, gro
         else:
             numdict[str(len(site))] += 1
 
-    return allatoms, allused, mindistlis, numdict, molenum
+    print('\nadsorbates : # of structures, {}'.format(numdict))
+    print('total structures: {}'.format(len(allatoms)))
+
+    return allatoms, mindistlis, numdict, molenum
 
 
 def getmindist(comb, cell):
@@ -326,22 +336,36 @@ class make_adsorbed_surface():
 
     def make_surface(self, maxmole, mindist):
         adseles = get_all_elements(self.adsorbate)
-        baresurface, initposlis = removemolecule(self.initatoms, adseles)
-        # barestruct = AseAtomsAdaptor.get_structure(baresurface)
+        baresurface, initadsites = remove_adsorbate(self.initatoms, adseles)
         bareadsites = getadsites(baresurface, False)
+
         allbareadsites = np.array(bareadsites['all'])
-        sites0 = [list(i) for i in allbareadsites]
+        group = create_site_group(baresurface)
 
-# group = creategroup(bareatoms, sites0)
+        ind = []
+        for i in range(len(allbareadsites)):
+            for j in range(len(initadsites)):
+                if np.allclose(allbareadsites[i][:2], initadsites[j][:2]):
+                    ind.append(i)
 
-# rused = []
-# for i in reversed(range(len(sites0))):
-#     for j in range(len(poslis)):
-#         if np.allclose(sites0[i][:2], poslis[j][:2]):
-#             tmp = sites0.pop(i)
-#             rused.append(tmp)
-# baresites, rused
+        adsites = np.delete(allbareadsites, ind, 0)
+        inuse = allbareadsites[ind]
 
+        allatoms, mindistlis, numdict, molenum \
+            = getuniqueatoms(self.initatoms, baresurface, adsites, maxmole, mindist, initadsites, group, self.adsorbate)
+
+        self.allatoms = allatoms
+        self.mindistlis = mindistlis
+        self.numdict = numdict
+        self.molenum = molenum
+
+    def write_trajectory(self):
+        for i in range(len(self.allatoms)):
+            outname = self.surfacename + str('_no') + str('{0:03d}'.format(i+1)) + '_CO_n' + str(
+                self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
+            print(outname)
+            outpath = initpath + str(outname)
+            self.allatoms[i].write(outpath)
 
 # def getalladsitecomb(sites):
 #     '''
@@ -414,7 +438,7 @@ class make_adsorbed_surface():
 #     '''
 #     calccomb[i][j]
 #     i: unique comb
-#     j: 0:1.0-1.5, 1:1.5-2.0, 2:2.5-3.0, 3:3.0-3.5, 4:3.5-4.0, 5:4.0-4.5, 6:4.5-5.0 
+#     j: 0:1.0-1.5, 1:1.5-2.0, 2:2.5-3.0, 3:3.0-3.5, 4:3.5-4.0, 5:4.0-4.5, 6:4.5-5.0
 #     '''
 #     positions = getadsitecomb(sites, num)
 #     listoftypes = []
