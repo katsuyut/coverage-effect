@@ -37,6 +37,7 @@ if query(name, env) != 'No file':
     atoms = query(name, env)
     print(atoms.get_potential_energy())
     e_atoms = 'Already in directory'
+    sys.exit()
 else:
     atoms.set_calculator(vasptags)
     e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
@@ -49,6 +50,11 @@ flag = False
 for handler in handlers:
     if handler.check():
         flag = True
+        
+        f = open('error_custodian.log', 'a')
+        f.write(handler.errors)
+        f.close()
+
         handler.correct()
 
 if flag:
