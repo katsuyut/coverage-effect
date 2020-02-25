@@ -25,7 +25,7 @@ def query(name, env='spacom'):
             view(traj)
         return atoms
     except IOError as e:
-        return 'No file'
+        print('No file')
 
 
 def init_query(name, env='spacom'):
@@ -36,7 +36,7 @@ def init_query(name, env='spacom'):
             view(atoms)
         return atoms
     except IOError as e:
-        return 'No file'
+        print('No file')
 
 
 def get_all_energy():
