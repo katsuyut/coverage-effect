@@ -58,6 +58,7 @@ def get_CoPt3(a):
 
 
 def get_all_elements(atoms):
+    atoms
     elements = []
     for ele in atoms.symbols:
         elements.append(ele)
@@ -212,7 +213,7 @@ def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites,
 
             dist = get_minimum_distance(nextused, bareatoms.cell)
             if dist < mindist:
-                # print('Distance {0:.2f} is below {1}'.format(dist, mindist))
+                print('Distance {0:.2f} is below {1}'.format(dist, mindist))
                 continue
 
             sameflag = check_if_same(bareatoms, nextused, tmpused)
@@ -274,8 +275,8 @@ def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites,
         else:
             numdict[str(len(site))] += 1
 
-    print('adsorbates : # of structures, {}'.format(numdict))
-    print('total structures: {}\n'.format(len(allatoms)))
+    print('\nadsorbates : # of structures, {}'.format(numdict))
+    print('total structures: {}'.format(len(allatoms)))
 
     return allatoms, mindistlis, numdict, molenum
 
@@ -331,7 +332,7 @@ class make_adsorbed_surface():
         self.surfacename = surfacename
         self.adsorbatename = adsorbatename
         self.initatoms = init_query(surfacename +'.traj', env='spacom')
-        self.adsorbate = query(adsorbatename +'.traj', env='spacom')
+        self.adsorbate = query(adsorbatename+'.traj', env='spacom')
 
     def make_surface(self, maxmole, mindist):
         adseles = get_all_elements(self.adsorbate)
@@ -362,6 +363,7 @@ class make_adsorbed_surface():
         for i in range(len(self.allatoms)):
             outname = self.surfacename + str('_no') + str('{0:03d}'.format(i+1)) + '_CO_n' + str(
                 self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
+            print(outname)
             outpath = initpath + str(outname)
             self.allatoms[i].write(outpath)
 
