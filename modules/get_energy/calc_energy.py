@@ -57,6 +57,7 @@ if flag:
     atoms.set_calculator(vasptags)
     e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
 
+    
 print('{0}, {1}'.format(name ,e_atoms))
 f = open('result.txt', 'a')
 f.write('{0}, {1}'.format(name ,e_atoms))

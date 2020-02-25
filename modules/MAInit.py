@@ -331,8 +331,8 @@ class make_adsorbed_surface():
     def __init__(self, surfacename, adsorbatename, env='spacom'):
         self.surfacename = surfacename
         self.adsorbatename = adsorbatename
-        self.initatoms = init_query(surfacename+'.traj', env)
-        self.adsorbate = init_query(adsorbatename+'.traj', env)
+        self.initatoms = init_query(surfacename+'.traj', env='spacom')
+        self.adsorbate = query(adsorbatename+'.traj', env='spacom')
 
     def make_surface(self, maxmole, mindist):
         adseles = get_all_elements(self.adsorbate)
