@@ -20,43 +20,6 @@ databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
 
 
-def get_NiGa(a):
-    b = a * 2**0.5
-    x = a/2
-    y = b/2
-    z = b/2
-
-    pos = np.array([[0, y, 0], [0, 0, z], [x, 0, 0], [x, y, z]])
-
-    atoms = Atoms(symbols='Ga2Ni2',  # Ga2Ni2
-                  positions=pos,
-                  cell=np.array([[x*2, 0, 0],
-                                 [0, y*2, 0],
-                                 [0, 0, z*2]]),
-                  pbc=1
-                  )
-
-    return atoms
-
-
-def get_CoPt3(a):
-    x = a/2
-    y = a/2
-    z = a/2
-
-    pos = np.array([[0, 0, 0], [x, y, 0], [0, y, z], [x, 0, z]])
-
-    atoms = Atoms(symbols='CoPt3',  # Ga2Ni2
-                  positions=pos,
-                  cell=np.array([[x*2, 0, 0],
-                                 [0, y*2, 0],
-                                 [0, 0, z*2]]),
-                  pbc=1
-                  )
-
-    return atoms
-
-
 def get_all_elements(atoms):
     atoms
     elements = []
@@ -128,32 +91,35 @@ def check_if_same(baresurface, sites, sitesset):
     Return True if found.
     '''
     struct = AseAtomsAdaptor.get_structure(baresurface)
-    surf_sg = SpacegroupAnalyzer(struct, 0.01)
+    surf_sg = SpacegroupAnalyzer(struct, 0.1)
     symm_ops = surf_sg.get_symmetry_operations()
 
-    frsitesset = []
+    modfrsitesset = []
     for item in sitesset:  # need this part to avoid giving empty item to the function
-        frsitesset.append(struct.lattice.get_fractional_coords(item))
+        frsites = struct.lattice.get_fractional_coords(item)
+        modfrsites = modify_possitions(frsites)
+        modfrsitesset.append(modfrsites)
+
 
     for op in symm_ops:
         froperatedsites = []
         for i in range(len(sites)):
             frsites = struct.lattice.get_fractional_coords(sites[i])
             froperatedsites.append(list(op.operate(frsites)))
-        froperatedsites.sort()
         modfropsites = modify_possitions(froperatedsites)
-
-        for used in frsitesset:
+        
+        for used in modfrsitesset:
             used = [list(item) for item in used]
             if len(modfropsites) == len(used):
                 if np.allclose(sorted(modfropsites), sorted(used), atol=0.01):
-                    #                     print('Symmetrically same structure found!')
+#                     print('Symmetrically same structure found!')
                     return True
 
 
 def modify_possitions(sites):
     """
     sites must be 2D array
+    sites are expressed in fractional coordinates
     """
     modsites = []
     for i in range(len(sites)):
@@ -166,7 +132,7 @@ def modify_possitions(sites):
 
             if abs(sites[i][j]) < 0.01 or abs(sites[i][j] - 1) < 0.01:
                 sites[i][j] = 0
-            modsite.append(sites[i][j])
+            modsite.append(round(sites[i][j], 3))
         modsite.append(sites[i][2])
         modsites.append(modsite)
     return modsites
@@ -209,51 +175,49 @@ def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites,
 #                 print('Used initialized!')
 
             add_adsorbate(nextatoms, adsorbate, height, rsites[i][:2])
-            nextused.append(rsites[i])
+            nextused.append(list(rsites[i]))
 
             dist = get_minimum_distance(nextused, bareatoms.cell)
             if dist < mindist:
-                print('Distance {0:.2f} is below {1}'.format(dist, mindist))
+                # print('Distance {0:.2f} is below {1}'.format(dist, mindist))
                 continue
 
-            sameflag = check_if_same(bareatoms, nextused, tmpused)
-            if sameflag:
+#             When next sites candidates is symmetrycally same as in the sites previously used, skip
+            if check_if_same(bareatoms, nextused, tmpused):
                 continue
 
             allatoms.append(nextatoms)
             allused.append(nextused)
             tmpused.append(nextused)
             molenum.append(molnum)
-            struct = AseAtomsAdaptor.get_structure(nextatoms)
 
-            # print('{0}-------{1}-------'.format(molnum, nextatoms.symbols))
+#             print('{0}-------{1}-------'.format(molnum, nextatoms.symbols)) # keep it for debugging
             if molnum == initmol+1:
                 print('progress: {}/{}, {:.2f} min'.format(count,
                                                            len(rsites), (time.time() - start)/60))
                 count += 1
 
-            try:
-                nextsites = AdsorbateSiteFinder(struct).symm_reduce(adsites)
-                indexlist = []
-                for j in range(len(nextused)):
-                    for k in range(len(nextsites)):
-                        if np.allclose(nextused[j], nextsites[k]):
-                            indexlist.append(k)
+            struct = AseAtomsAdaptor.get_structure(nextatoms)
+            nextsites = AdsorbateSiteFinder(struct).symm_reduce(adsites)
+            indexlist = []
+            
+            for j in range(len(nextused)):
+                for k in range(len(nextsites)):
+                    if np.allclose(nextused[j], nextsites[k], atol=0.01):
+                        indexlist.append(k)
 
-                for j in range(len(usedadsites)):
-                    for k in range(len(nextsites)):
-                        if np.allclose(usedadsites[j], nextsites[k]):
-                            indexlist.append(k)
+            for j in range(len(usedadsites)):
+                for k in range(len(nextsites)):
+                    if np.allclose(usedadsites[j], nextsites[k], atol=0.01):
+                        indexlist.append(k)
 
-                indexlist.sort(reverse=True)
-                for j in range(len(indexlist)):
-                    nextsites.pop(indexlist[j])
+            indexlist.sort(reverse=True)
+            for j in range(len(indexlist)):
+                nextsites.pop(indexlist[j])
 
-                recursive(nextatoms, nextsites, nextused,
-                          molnum, tmpused, count)
+            recursive(nextatoms, nextsites, nextused,
+                      molnum, tmpused, count)
 
-            except:
-                print('Error!!')
 
             if molnum == 1:
                 for j in range(len(group)):
@@ -366,109 +330,3 @@ class make_adsorbed_surface():
             print(outname)
             outpath = initpath + str(outname)
             self.allatoms[i].write(outpath)
-
-# def getalladsitecomb(sites):
-#     '''
-#     Given sites dictionary, return all possible combinations of positions.
-#     '''
-#     positions = []
-
-#     allsites = np.append(sites['ontop'], sites['bridge'], axis=0)
-#     try:
-#         allsites = np.append(allsites, sites['hollow'], axis=0)
-#     except:
-#         print('No hollow')
-
-#     for i in range(len(allsites)):
-#         for j in itertools.combinations(allsites, i):
-#             positions.append(i)
-
-#     return positions
-
-
-# def getadsitecomb(sites, num):
-#     '''
-#     Given sites dictionary and adsorbed atom number, return all possible combinations of positions.
-#     '''
-#     positions = []
-
-#     allsites = np.append(sites['ontop'], sites['bridge'], axis=0)
-#     try:
-#         allsites = np.append(allsites, sites['hollow'], axis=0)
-#     except:
-#         print('No hollow')
-
-#     for i in itertools.combinations(allsites, num):
-#         positions.append(i)
-
-#     return positions
-
-
-# def checksitetype(comb, sites):
-#     '''
-#     Given one combination of adsorption sites, return number of type of the sites.
-#     '''
-#     ontop = 0
-#     bridge = 0
-#     hollow = 0
-
-#     for i in range(len(comb)):
-#         ncomb = np.round(comb[i], 4)
-
-#         o = (ncomb == np.round(sites['ontop'], 4))
-#         for j in o:
-#             if ([True, True, True] == j).all():
-#                 ontop += 1
-
-#         b = (ncomb == np.round(sites['bridge'], 4))
-#         for j in b:
-#             if ([True, True, True] == j).all():
-#                 bridge += 1
-
-#         if sites['hollow'] != []:
-#             h = (ncomb == np.round(sites['hollow'], 4))
-#             for j in h:
-#                 if ([True, True, True] == j).all():
-#                     hollow += 1
-
-#     return [ontop, bridge, hollow]
-
-
-# def getcalccomb(sites, num, cell):
-#     '''
-#     calccomb[i][j]
-#     i: unique comb
-#     j: 0:1.0-1.5, 1:1.5-2.0, 2:2.5-3.0, 3:3.0-3.5, 4:3.5-4.0, 5:4.0-4.5, 6:4.5-5.0
-#     '''
-#     positions = getadsitecomb(sites, num)
-#     listoftypes = []
-#     results = []
-
-#     for i in range(len(positions)):
-#         listoftypes.append(checksitetype(positions[i], sites))
-#     uniquecomb = [list(x) for x in set(tuple(x) for x in listoftypes)]
-
-#     mindistlist = get_minimum_distance_list(positions, cell)
-#     maxmindist = int(np.ceil(max(mindistlist)/0.5)-3)
-#     calccombs = [[0 for i in range(maxmindist + 1)]
-#                  for i in range(len(uniquecomb))]
-
-#     for i in range(len(positions)):
-#         comb = checksitetype(positions[i], sites)
-#         dist = get_minimum_distance(positions[i], cell)
-
-#         ind0 = uniquecomb.index(comb)
-#         ind1 = int(np.ceil(dist/0.5)-3)
-
-#         if dist > 1:
-#             if calccombs[ind0][ind1] == 0:
-#                 calccombs[ind0][ind1] = positions[i]
-#                 results.append([ind0, ind1, dist])
-
-#     return calccombs, uniquecomb, results
-
-
-# def getcalcatoms(atoms, molecule, h, calccomb):
-#     if type(calccomb) != int:
-#         for i in range(len(calccomb)):
-#             add_adsorbate(atoms, molecule, h, calccomb[i][:2])
