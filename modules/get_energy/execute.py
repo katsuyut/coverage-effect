@@ -14,17 +14,14 @@ for file in read_data:
     com1 = 'mkdir ' + name[0:-5]
     os.system(com1)
     
-    com2 = 'cp calc_energy.py calc_inter_energy.py submitjob.pbs submitjob_int.pbs ' + name[0:-5] + '/'
+    com2 = 'cp calc_energy.py calc_inter_energy.py submitjob.pbs submitjob_int.pbs vdw_kernel.bindat ' + name[0:-5] + '/'
     os.system(com2)
 
     com3_1 = 'cd ' + name[0:-5] + '\n'
-    com3_2 = 'sbatch submitjob.pbs ' + name
-    com3 = com3_1 + com3_2
+    com3_2 = 'sbatch submitjob.pbs ' + name + '\n'
+    com3_3 = 'mkdir interaction' + '\n'
+    com3_4 = 'mv calc_inter_energy.py submitjob_int.pbs interaction/' + '\n'
+    com3_5 = 'cd interaction' + '\n'
+    com3_6 = 'sbatch submitjob.pbs ' + name
+    com3 = com3_1 + com3_2 + com3_3 + com3_4 + com3_5 + com3_6
     os.system(com3)
-
-    com4_1 = 'mkdir interaction' + '\n'
-    com4_2 = 'mv calc_inter_energy.py submitjob_int.pbs interaction/' + '\n'
-    com4_3 = 'cd interaction' + '\n'
-    com4_4 = 'sbatch submitjob.pbs ' + name
-    com4 = com4_1 + com4_2 + com4_3 + com4_4
-    os.system(com4)
