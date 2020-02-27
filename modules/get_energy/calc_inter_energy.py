@@ -17,6 +17,9 @@ fixlayer = 3
 atoms = init_query(name, env)
 cell = atoms.cell
 
+if 'no' not in name:
+    sys.exit()
+
 del atoms[[atom.index for atom in atoms if atom.tag!=0]]
 
 ### Set vasp ###    
