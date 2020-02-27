@@ -34,9 +34,9 @@ vasptags = set_vasp_tags(tagdict)
 ### Get energy ###
 e_atoms = get_energy(atoms, name[0:-5]+'__', vasptags, env)
         
-print('{0}, {1}'.format(name ,e_atoms))
+print('{0}, {1}'.format(name[0:-5]+'__'+name[-5:] ,e_atoms))
 f = open('result.txt', 'a')
-f.write('{0}, {1}'.format(name ,e_atoms))
+f.write('{0}, {1}'.format(name[0:-5]+'__'+name[-5:] ,e_atoms))
 f.close()
 
 print((time.time() - start)/60, 'min')
