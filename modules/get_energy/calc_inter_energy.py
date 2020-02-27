@@ -28,6 +28,7 @@ nb = get_nbands(atoms, 2) # default value is 0.5
 
 tagdict = get_default_vasp_tags('RPBE')
 tagdict['kpts'] = kpoints
+tagdict['nsw'] = 0
 vasptags = set_vasp_tags(tagdict)
         
 ### Get energy ###
