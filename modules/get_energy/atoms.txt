@@ -1,16 +1,1 @@
-Cu111_u4_no01_CO_n1_d18.traj
-Cu111_u4_no02_CO_n1_d18.traj
-Cu111_u4_no03_CO_n1_d18.traj
-Cu111_u4_no04_CO_n1_d18.traj
-Pt111_u3_no02_CO_n1_d14.traj
-Pt111_u3_no03_CO_n1_d14.traj
-Pt111_u3_no04_CO_n1_d14.traj
-Pt111_u4.traj
-Pt111_u4_no01_CO_n1_d20.traj
-Pt111_u4_no02_CO_n1_d20.traj
-Pt111_u4_no03_CO_n1_d20.traj
-Pt111_u4_no04_CO_n1_d20.traj
-Ag111_u4_no01_CO_n1_d21.traj
-Ag111_u4_no02_CO_n1_d21.traj
-Ag111_u4_no03_CO_n1_d21.traj
-Ag111_u4_no04_CO_n1_d21.traj
+Cu_100_u2_BEEF-vdW.traj
