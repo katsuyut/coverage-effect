@@ -22,7 +22,7 @@ for file in read_data:
     com3 = com3_1 + com3_2
     os.system(com3)
 
-    com4_1 = 'mkdir interaction'
+    com4_1 = 'mkdir interaction' + '\n'
     com4_2 = 'mv get_inter_energy.py submitjob_int.pbs interaction/' + '\n'
     com4_3 = 'cd interaction' + '\n'
     com4_4 = 'sbatch submitjob.pbs ' + name
