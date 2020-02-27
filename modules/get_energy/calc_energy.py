@@ -22,8 +22,7 @@ cell = atoms.cell
 if 3 in set(atoms.get_tags()): # set constraint only on surface calc
     constraint = FixAtoms(mask=[atom.tag >= fixlayer for atom in atoms])
     atoms.set_constraint(constraint)
-    
-    
+
 ### Set vasp ###    
 kpoints = get_kpts(atoms)    
 nb = get_nbands(atoms, 2) # default value is 0.5
@@ -39,7 +38,6 @@ if query(name, env) != 'No file':
     e_atoms = 'Already in directory'
     sys.exit()
 else:
-    atoms.set_calculator(vasptags)
     e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
 
 

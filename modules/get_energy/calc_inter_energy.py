@@ -20,15 +20,15 @@ cell = atoms.cell
 del atoms[[atom.index for atom in atoms if atom.tag!=0]]
 
 ### Set vasp ###    
-kpoints = getkpts(atoms)    
-nb = getnbands(atoms, 2) # default value is 0.5
+kpoints = get_kpts(atoms)    
+nb = get_nbands(atoms, 2) # default value is 0.5
 
-tagdict = getdefaultvasptags('RPBE')
+tagdict = get_default_vasp_tags('RPBE')
 tagdict['kpts'] = kpoints
-vasptags = setvasptags(tagdict)
+vasptags = set_vasp_tags(tagdict)
         
 ### Get energy ###
-e_atoms = getenergy(atoms, name[0:-5]+'__', vasptags, env)
+e_atoms = get_energy(atoms, name[0:-5]+'__', vasptags, env)
         
 print('{0}, {1}'.format(name ,e_atoms))
 f = open('result.txt', 'a')
