@@ -32,7 +32,7 @@ tagdict['kpts'] = kpoints
 vasptags = set_vasp_tags(tagdict)
 
 ### Get energy ###
-if query(name, env) != 'No file':
+if query(name, env) != None:
     atoms = query(name, env)
     print(atoms.get_potential_energy())
     e_atoms = 'Already in directory'
