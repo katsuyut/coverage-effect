@@ -25,7 +25,7 @@ def query(name, env='spacom'):
             view(traj)
         return atoms
     except IOError as e:
-        print('No file')
+        print('No file named {} in database'.format(name))
         return None
 
 
@@ -37,7 +37,7 @@ def init_query(name, env='spacom'):
             view(atoms)
         return atoms
     except IOError as e:
-        print('No file')
+        print('No file named {} in init'.format(name))
         return None
 
 

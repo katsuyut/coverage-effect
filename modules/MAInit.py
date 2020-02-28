@@ -112,7 +112,7 @@ def check_if_same(baresurface, sites, sitesset):
             used = [list(item) for item in used]
             if len(modfropsites) == len(used):
                 if np.allclose(sorted(modfropsites), sorted(used), atol=0.01):
-#                     print('Symmetrically same structure found!')
+                    # print('Symmetrically same structure found!')
                     return True
 
 
@@ -172,7 +172,7 @@ def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites,
             nextused = copy.deepcopy(rused)
             if molnum == 1:
                 tmpused = copy.deepcopy(allused)
-#                 print('Used initialized!')
+                # print('Used initialized!')
 
             add_adsorbate(nextatoms, adsorbate, height, rsites[i][:2])
             nextused.append(list(rsites[i]))
@@ -182,7 +182,7 @@ def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites,
                 # print('Distance {0:.2f} is below {1}'.format(dist, mindist))
                 continue
 
-#             When next sites candidates is symmetrycally same as in the sites previously used, skip
+            # When next sites candidates is symmetrycally same as in the sites previously used, skip
             if check_if_same(bareatoms, nextused, tmpused):
                 continue
 
@@ -191,7 +191,7 @@ def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites,
             tmpused.append(nextused)
             molenum.append(molnum)
 
-#             print('{0}-------{1}-------'.format(molnum, nextatoms.symbols)) # keep it for debugging
+            # print('{0}-------{1}-------'.format(molnum, nextatoms.symbols)) # keep it for debugging
             if molnum == initmol+1:
                 print('progress: {}/{}, {:.2f} min'.format(count,
                                                            len(rsites), (time.time() - start)/60))
