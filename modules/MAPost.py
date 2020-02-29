@@ -6,6 +6,7 @@ import itertools
 import warnings
 import math
 import copy
+import re
 from ase import Atoms, Atom
 from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate
 from ase.io import read, write
@@ -16,6 +17,7 @@ from scipy.spatial.qhull import QhullError
 from pymatgen.analysis.local_env import VoronoiNN
 from MAUtil import *
 from MAInit import *
+from pymongo import MongoClient
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
@@ -226,3 +228,214 @@ def get_adsorbates_correlation(b_mat, nads, maximumdistance=3):
         if i == terminate:
             break
     return np.array(results)  # [distance, # of nearest adsorbate]
+
+
+class make_database():
+    """
+    Create json(python dictionary) object for adsorbate adsorbed surface
+    This requires specific filename convention
+    ex) Pd_111_u2_RPBE_no015_CO_n1_d9.traj
+        (element)_(face)_(u + unitlength)_(xc used in vasp)_(number)_(adsorbate)_
+        (n + number of adsorbate)_(d + minimum distance of each adsorbates).traj
+    """
+
+    def __init__(self, filename):
+        self.filename = filename
+        res = re.match(
+            '(.*)_(.*)_u(.*)_(.*)_(.*)_(.*)_n(.*)_(.*)(.traj)', filename)
+        if not res:
+            raise NameError('This file is not for this class.')
+        self.numads = int(res.group(7))
+        self.iatoms = init_query(filename)
+        self.ratoms = query(filename)
+        client = MongoClient('localhost', 27017)
+        db = client.adsE_database
+        self.collection = db.adsE_collection
+
+    def make_json(self):
+        dic = {}
+
+        res = re.match(
+            '(.*)_(.*)_u(.*)_(.*)_(.*)_(.*)_n(.*)_(.*)(.traj)', self.filename)
+        ele = res.group(1)
+        face = res.group(2)
+        unit = int(res.group(3))
+        xc = res.group(4)
+        ads = res.group(6)
+        numads = int(res.group(7))
+
+        res = re.match('(.*)_no.*', self.filename)
+        barefile = res.group(1) + '.traj'
+        bareatoms = query(barefile, 'spacom')
+
+        adsfile = ads + '_' + xc + '.traj'
+        COatoms = query(adsfile, 'scpacom')
+
+        ### calc area ###
+        x = self.ratoms.cell[0][0]
+        y = self.ratoms.cell[1][1]
+        area = x*y
+
+        ### calc surface atom number ###
+        tot = 0
+        for atom in self.ratoms:
+            if atom.tag == 1:
+                tot += 1
+
+        ### get energies ###
+        ene = self.ratoms.get_potential_energy()
+        bareene = bareatoms.get_potential_energy()
+        COene = COatoms.get_potential_energy()
+        totaladsene = ene - (COene*numads + bareene)
+
+        ### get adsorbate position info ###
+        igroups, iposlis, rgroups, rposlis = get_adsorbates_position_info(
+            self.filename, 0)
+
+        ### get COint info ###
+        intfile = self.filename[:-5] + '__.traj'
+        initatoms = query(intfile, 'spacom')
+        intene = initatoms.get_potential_energy() - numads*COene
+
+        ### get COlength info ###
+        COlengthlis = []
+        for i in range(len(self.ratoms)):
+            if self.ratoms[i].symbol == 'C':
+                Cpos = self.ratoms[i].position
+                Opos = self.ratoms[i+1].position
+                COlengthlis.append(np.linalg.norm(Cpos-Opos))
+
+        ### judge valid or not ###
+
+        converged = np.max(np.abs(self.ratoms.get_forces())) < 0.03
+        not_moved = get_maximum_movement(self.filename) < 1.5
+        kept_sites = igroups == rgroups
+        if converged and not_moved and kept_sites:
+            isvalid = True
+        else:
+            isvalid = False
+
+        dic['name'] = self.filename
+        dic['isvalid'] = 'yes' if isvalid else 'no'
+        dic['element'] = ele
+        dic['face'] = face
+        dic['unitlength'] = unit
+        dic['xc'] = xc
+        dic['adsorbate'] = ads
+        dic['numberofads'] = numads
+        dic['coverage'] = numads/tot
+        dic['surfatomnum'] = tot
+        dic['E'] = ene
+        dic['bareE'] = bareene
+        dic['E_CO'] = COene
+        dic['totaladsE'] = totaladsene
+        dic['aveadsE/suratom'] = totaladsene/tot
+        dic['aveadsE/ads'] = totaladsene/numads
+        dic['E_int_space'] = intene
+        dic['E_each_ads'] = None
+        dic['area'] = area
+        dic['density'] = numads/area
+        dic['igroups'] = igroups
+#         dic['iposlis'] = [list(item) for item in iposlis]
+        dic['rgroups'] = rgroups
+#         dic['rposlis'] = [list(item) for item in rposlis]
+        dic['COlengthlis'] = COlengthlis
+        dic['converged'] = 'yes' if converged else 'no'
+        dic['not_moved'] = 'yes' if not_moved else 'no'
+        dic['kept_sites'] = 'yes' if kept_sites else 'no'
+        dic['minimum_distance'] = None
+        dic['ads_dist2'] = None
+        dic['ads_dist3'] = None
+
+#         for key in dic.keys():
+#             print('{}: {}'.format(key, dic[key]))
+        print(self.filename)
+
+        return dic
+
+    def add_to_database(self):
+        if self.check_database():
+            print('Already in database')
+            return None
+        post_data = self.make_json()
+        result = self.collection.insert_one(post_data)
+        print('One post: {0}\n'.format(result.inserted_id))
+
+    def get_energy_for_each_adsorbates(self):
+        data = list(self.collection.find({'name': self.filename}))
+        if len(data) != 1:
+            print('More than two data found!')
+            return None
+        else:
+            data = data[0]
+
+        E_each_ads = []  # adsE + slabE
+
+        for site in data['rgroups']:
+            refdata = self.collection.find_one({'element': data['element'], 'face': data['face'], 'unitlength': 2,
+                                           'xc': data['xc'], 'adsorbate': data['adsorbate'],
+                                           'rgroups': [site]})
+            if refdata == None:
+                print(
+                    'Reference data is invalid. Each adsorption energy cannnot be calculated.')
+                return None
+            else:
+                E_each_ads.append(refdata['totaladsE'])
+
+        return E_each_ads
+
+    def update_database_Eeach(self):
+        """
+        Assuming more than two adsorbates are on the surface.
+        """
+        if self.numads <= 1:
+            raise NameError('This file is not for this fucntion.')
+        E_each_ads = self.get_energy_for_each_adsorbates()
+        self.collection.find_one_and_update(
+            {'name': self.filename}, {'$set': {'E_each_ads': E_each_ads}})
+        print(self.filename, ' E_each_ads updated.')
+
+    def update_database_adsorbates_correlation(self, maximumdistance=3):
+        """
+        Assuming more than two adsorbates are on the surface.
+        """
+        if self.numads <= 1:
+            raise NameError('This file is not for this fucntion.')
+
+        if maximumdistance == 3:
+            repeat = 3
+            rratoms = get_repeated_atoms(self.ratoms, repeat)
+        else:
+            print('Currently maximum distance is 3.')
+
+        b_mat, nads = get_coordination_matrix(rratoms, expression=2)
+        correlation = get_adsorbates_correlation(b_mat, nads, repeat)
+        if correlation[0][1] != 0:
+            mindist = 2
+        elif correlation[1][1] != 0:
+            mindist = 3
+        else:
+            mindist = None
+
+        self.collection.find_one_and_update(
+            {'name': self.filename}, {'$set': {'minimum_distance': mindist}})
+        self.collection.find_one_and_update(
+            {'name': self.filename}, {'$set': {'ads_dist2': correlation[0][1]}})
+        self.collection.find_one_and_update(
+            {'name': self.filename}, {'$set': {'ads_dist3': correlation[1][1]}})
+        print(self.filename, 'Adsorbate correlation updated.')
+
+    def check_database(self):
+        data = list(self.collection.find({'name': self.filename}))
+        if not data:
+            print('Not in database.')
+            return None
+        elif len(data) > 1:
+            print('More than two data found!')
+            return data[0]
+        else:
+            return data[0]
+
+    def delete_from_database(self):
+        self.collection.delete_many({'name': self.filename})
+        print(self.filename, 'deleted')

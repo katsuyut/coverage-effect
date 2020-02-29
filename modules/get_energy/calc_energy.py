@@ -1,5 +1,7 @@
 import numpy as np
-import sys, copy, time
+import sys
+import copy
+import time
 from MAUtil import *
 from MACalc import *
 from custodian.custodian import Custodian
@@ -10,6 +12,8 @@ start = time.time()
 # env = 'local'
 env = 'spacom'
 name = sys.argv[1]
+res = re.match('(.*)_(.*)_u(.*)_(.*)_(.*)_(.*)_n(.*)_(.*)(.traj)', name)
+xc = res.group(4)
 
 ### Set coefficients ###
 fixlayer = 3
@@ -19,15 +23,15 @@ fixlayer = 3
 atoms = init_query(name, env)
 cell = atoms.cell
 
-if 3 in set(atoms.get_tags()): # set constraint only on surface calc
+if 3 in set(atoms.get_tags()):  # set constraint only on surface calc
     constraint = FixAtoms(mask=[atom.tag >= fixlayer for atom in atoms])
     atoms.set_constraint(constraint)
 
-### Set vasp ###    
-kpoints = get_kpts(atoms)    
-nb = get_nbands(atoms, 2) # default value is 0.5
+### Set vasp ###
+kpoints = get_kpts(atoms)
+nb = get_nbands(atoms, 2)  # default value is 0.5
 
-tagdict = get_default_vasp_tags('RPBE')
+tagdict = get_default_vasp_tags(xc)
 tagdict['kpts'] = kpoints
 vasptags = set_vasp_tags(tagdict)
 
@@ -42,13 +46,14 @@ else:
 
 
 ### use custodian and if error is found restart ###
-handlers = [VaspErrorHandler(), UnconvergedErrorHandler(), MaxForceErrorHandler()]
+handlers = [VaspErrorHandler(), UnconvergedErrorHandler(),
+            MaxForceErrorHandler()]
 
 flag = False
 for handler in handlers:
     if handler.check():
         flag = True
-        
+
         f = open('error_custodian.log', 'a')
         f.write(handler.errors)
         f.close()
@@ -61,10 +66,10 @@ if flag:
     atoms.set_calculator(vasptags)
     e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
 
-    
-print('{0}, {1}'.format(name ,e_atoms))
+
+print('{0}, {1}'.format(name, e_atoms))
 f = open('result.txt', 'a')
-f.write('{0}, {1}'.format(name ,e_atoms))
+f.write('{0}, {1}'.format(name, e_atoms))
 f.close()
 
 print((time.time() - start)/60, 'min')

@@ -100,14 +100,13 @@ def check_if_same(baresurface, sites, sitesset):
         modfrsites = modify_possitions(frsites)
         modfrsitesset.append(modfrsites)
 
-
     for op in symm_ops:
         froperatedsites = []
         for i in range(len(sites)):
             frsites = struct.lattice.get_fractional_coords(sites[i])
             froperatedsites.append(list(op.operate(frsites)))
         modfropsites = modify_possitions(froperatedsites)
-        
+
         for used in modfrsitesset:
             used = [list(item) for item in used]
             if len(modfropsites) == len(used):
@@ -200,7 +199,7 @@ def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites,
             struct = AseAtomsAdaptor.get_structure(nextatoms)
             nextsites = AdsorbateSiteFinder(struct).symm_reduce(adsites)
             indexlist = []
-            
+
             for j in range(len(nextused)):
                 for k in range(len(nextsites)):
                     if np.allclose(nextused[j], nextsites[k], atol=0.01):
@@ -217,7 +216,6 @@ def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites,
 
             recursive(nextatoms, nextsites, nextused,
                       molnum, tmpused, count)
-
 
             if molnum == 1:
                 for j in range(len(group)):
@@ -295,7 +293,7 @@ class make_adsorbed_surface():
     def __init__(self, surfacename, adsorbatename, env='spacom'):
         self.surfacename = surfacename
         self.adsorbatename = adsorbatename
-        self.initatoms = init_query(surfacename +'.traj', env='spacom')
+        self.initatoms = init_query(surfacename + '.traj', env='spacom')
         self.adsorbate = query(adsorbatename+'.traj', env='spacom')
 
     def make_surface(self, maxmole, mindist):

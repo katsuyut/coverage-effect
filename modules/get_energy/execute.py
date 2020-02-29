@@ -10,11 +10,12 @@ f.closed
 for file in read_data:
     name = file.split('\n')[0]
     print(name)
-    
+
     com1 = 'mkdir ' + name[0:-5]
     os.system(com1)
-    
-    com2 = 'cp calc_energy.py calc_inter_energy.py submitjob.pbs submitjob_int.pbs vdw_kernel.bindat ' + name[0:-5] + '/'
+
+    com2 = 'cp calc_energy.py calc_inter_energy.py submitjob.pbs submitjob_int.pbs vdw_kernel.bindat ' + \
+        name[0:-5] + '/'
     os.system(com2)
 
     com3_1 = 'cd ' + name[0:-5] + '\n'

@@ -3,7 +3,7 @@ from MACalc import *
 elements = ['Cu', 'Pt']
 xcs = ['RPBE', 'RPBE-D2', 'vdW-DF', 'optB88-vdW', 'vdW-DF2', 'BEEF-vdW']
 faces = ['100', '111']
-unitlengths = [1,2,3,4]
+unitlengths = [1, 2, 3, 4]
 adsorbate = 'CO'
 
 # maxmole = []
