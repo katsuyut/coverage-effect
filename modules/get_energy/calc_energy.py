@@ -55,7 +55,7 @@ for handler in handlers:
         flag = True
 
         f = open('error_custodian.log', 'a')
-        f.write(handler.errors)
+        f.write(str(handler.errors))
         f.close()
 
         handler.correct()
