@@ -6,6 +6,7 @@ import itertools
 import warnings
 import math
 import copy
+import re
 from ase import Atoms, Atom
 from ase.calculators.emt import EMT
 from ase.calculators.vasp import Vasp, Vasp2

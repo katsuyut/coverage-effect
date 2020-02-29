@@ -6,6 +6,7 @@ import itertools
 import warnings
 import math
 import copy
+import re
 import matplotlib.pyplot as plt
 from ase import Atoms, Atom
 from ase.io import read, write
