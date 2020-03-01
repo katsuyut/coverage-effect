@@ -24,12 +24,17 @@ initpath = '/home/katsuyut/research/coverage-effect/init/'
 
 
 def get_maximum_movement(name):
+    '''
+    Using adjust_positions from MAInit to avoid the pbc problem
+    '''
     name = name.split('.traj')[0]
     name = name + '_all.traj'
     path = databasepath + name
     traj = Trajectory(path)
 
-    diff = abs(traj[-1].positions - traj[0].positions)
+    initpos = adjust_possitions(traj[-1].positions)
+    postpos = adjust_possitions(traj[0].positions)
+    diff = abs(np.array(initpos) - np.array(postpos))
     maxdiff = np.max(diff)
 
     return maxdiff
@@ -244,6 +249,7 @@ class make_database():
         res = re.match(
             '(.*)_(.*)_u(.*)_(.*)_(.*)_(.*)_n(.*)_(.*)(.traj)', filename)
         if not res:
+            print('This file is not for this class.')
             raise NameError('This file is not for this class.')
         self.numads = int(res.group(7))
         self.iatoms = init_query(filename)
@@ -251,6 +257,7 @@ class make_database():
         client = MongoClient('localhost', 27017)
         db = client.adsE_database
         self.collection = db.adsE_collection
+        print('-----------------------------------------------------------')
 
     def make_json(self):
         dic = {}
@@ -278,7 +285,7 @@ class make_database():
 
         ### calc surface atom number ###
         tot = 0
-        for atom in self.ratoms:
+        for atom in bareatoms:
             if atom.tag == 1:
                 tot += 1
 
@@ -306,7 +313,6 @@ class make_database():
                 COlengthlis.append(np.linalg.norm(Cpos-Opos))
 
         ### judge valid or not ###
-
         converged = np.max(np.abs(self.ratoms.get_forces())) < 0.03
         not_moved = get_maximum_movement(self.filename) < 1.5
         kept_sites = igroups == rgroups
@@ -373,8 +379,8 @@ class make_database():
 
         for site in data['rgroups']:
             refdata = self.collection.find_one({'element': data['element'], 'face': data['face'], 'unitlength': 2,
-                                           'xc': data['xc'], 'adsorbate': data['adsorbate'],
-                                           'rgroups': [site]})
+                                                'xc': data['xc'], 'adsorbate': data['adsorbate'],
+                                                'rgroups': [site]})
             if refdata == None:
                 print(
                     'Reference data is invalid. Each adsorption energy cannnot be calculated.')
@@ -389,7 +395,8 @@ class make_database():
         Assuming more than two adsorbates are on the surface.
         """
         if self.numads <= 1:
-            raise NameError('This file is not for this fucntion.')
+            print('This function is for surface with more than 2 adsorbates.')
+            return None
         E_each_ads = self.get_energy_for_each_adsorbates()
         self.collection.find_one_and_update(
             {'name': self.filename}, {'$set': {'E_each_ads': E_each_ads}})
@@ -400,7 +407,8 @@ class make_database():
         Assuming more than two adsorbates are on the surface.
         """
         if self.numads <= 1:
-            raise NameError('This file is not for this fucntion.')
+            print('This function is for surface with more than 2 adsorbates.')
+            return None
 
         if maximumdistance == 3:
             repeat = 3

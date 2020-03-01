@@ -5,7 +5,7 @@ import time
 from MAUtil import *
 from MACalc import *
 from custodian.custodian import Custodian
-from custodian.vasp.handlers import VaspErrorHandler, UnconvergedErrorHandler, MaxForceErrorHandler
+from custodian.vasp.handlers import VaspErrorHandler, UnconvergedErrorHandler
 
 start = time.time()
 
@@ -48,19 +48,20 @@ else:
 
 
 ### use custodian and if error is found restart ###
-handlers = [VaspErrorHandler(), UnconvergedErrorHandler(),
-            MaxForceErrorHandler()]
+handlers = [VaspErrorHandler(), UnconvergedErrorHandler()]
 
 flag = False
 for handler in handlers:
     if handler.check():
         flag = True
+        handler.correct()
 
         f = open('error_custodian.log', 'a')
-        f.write(str(handler.errors))
+        f.write(type(handler).__name__ + '\n')
+        if type(handler).__name__ == 'VaspErrorHandler':
+            f.write(str(handler.errors))
         f.close()
 
-        handler.correct()
 
 if flag:
     vasptags = Vasp(restart=True)

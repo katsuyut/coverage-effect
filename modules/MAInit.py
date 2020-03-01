@@ -97,7 +97,7 @@ def check_if_same(baresurface, sites, sitesset):
     modfrsitesset = []
     for item in sitesset:  # need this part to avoid giving empty item to the function
         frsites = struct.lattice.get_fractional_coords(item)
-        modfrsites = modify_possitions(frsites)
+        modfrsites = adjust_possitions(frsites)
         modfrsitesset.append(modfrsites)
 
     for op in symm_ops:
@@ -105,7 +105,7 @@ def check_if_same(baresurface, sites, sitesset):
         for i in range(len(sites)):
             frsites = struct.lattice.get_fractional_coords(sites[i])
             froperatedsites.append(list(op.operate(frsites)))
-        modfropsites = modify_possitions(froperatedsites)
+        modfropsites = adjust_possitions(froperatedsites)
 
         for used in modfrsitesset:
             used = [list(item) for item in used]
@@ -115,7 +115,7 @@ def check_if_same(baresurface, sites, sitesset):
                     return True
 
 
-def modify_possitions(sites):
+def adjust_possitions(sites):
     """
     sites must be 2D array
     sites are expressed in fractional coordinates
