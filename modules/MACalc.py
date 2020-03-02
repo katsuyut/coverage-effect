@@ -26,29 +26,29 @@ zvalpath = '/home/katsuyut/research/coverage-effect/zval.txt'
 
 
 def get_nbands(atoms, f=0.5):
-    file = open(zvalpath, 'r')
-    combs = file.read().split('\n')
-    electrondict = {}
-    for comb in combs:
-        kye = comb.split('\t')[0]
-        val = comb.split('\t')[1]
-        electrondict[kye] = float(val)
+    with open(zvalpath, 'r') as f:
+        combs = f.read().split('\n')
+        electrondict = {}
+        for comb in combs:
+            kye = comb.split('\t')[0]
+            val = comb.split('\t')[1]
+            electrondict[kye] = float(val)
 
-    species = set(atoms.symbols)
+        species = set(atoms.symbols)
 
-    speciesdict = {}
-    for i in species:
-        bools = (i == atoms.symbols)
-        speciesdict[i] = list(bools).count(True)
+        speciesdict = {}
+        for i in species:
+            bools = (i == atoms.symbols)
+            speciesdict[i] = list(bools).count(True)
 
-    keys = speciesdict.keys()
-    vals = speciesdict.values()
+        keys = speciesdict.keys()
+        vals = speciesdict.values()
 
-    nelectrons = 0
-    for key in keys:
-        nelectrons += speciesdict[key]*electrondict[key]
+        nelectrons = 0
+        for key in keys:
+            nelectrons += speciesdict[key]*electrondict[key]
 
-    nbands = int(nelectrons/2 + len(atoms)*f)
+        nbands = int(nelectrons/2 + len(atoms)*f)
 
     return nbands
 
@@ -351,10 +351,9 @@ class make_baresurface():
             v0, e0, B = eos.fit()
             a = (v0/2.0)**(1.0/3.0)*2.0
 
-            f = open('result.txt', 'a')
-            f.write('{0}, {1}, {2}\n'.format(self.ele, self.xc, str(a)))
-            f.close()
-
+            with open('result.txt', 'a') as f:
+               f.write('{0}, {1}, {2}\n'.format(self.ele, self.xc, str(a)))
+    
             self.a = a
 
         ### hcp ###
@@ -389,10 +388,9 @@ class make_baresurface():
                            (p[4], 2 * p[5])])
             a, c = np.linalg.solve(p2.T, -p1)
 
-            f = open('result.txt', 'a')
-            f.write('{0}, {1}, {2}, {3}\n'.format(
-                self.ele, self.xc, str(a), str(c)))
-            f.close()
+            with open('result.txt', 'a') as f:
+                f.write('{0}, {1}, {2}, {3}\n'.format(
+                    self.ele, self.xc, str(a), str(c)))
 
             self.a = a
             self.c = c

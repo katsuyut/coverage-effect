@@ -31,7 +31,7 @@ if 3 in set(atoms.get_tags()):  # set constraint only on surface calc
 
 ### Set vasp ###
 kpoints = get_kpts(atoms)
-nb = get_nbands(atoms, 2)  # default value is 0.5
+# nb = get_nbands(atoms, 2)  # default value is 0.5
 
 tagdict = get_default_vasp_tags(xc)
 tagdict['kpts'] = kpoints
@@ -56,12 +56,10 @@ for handler in handlers:
         flag = True
         handler.correct()
 
-        f = open('error_custodian.log', 'a')
-        f.write(type(handler).__name__ + '\n')
-        if type(handler).__name__ == 'VaspErrorHandler':
-            f.write(str(handler.errors))
-        f.close()
-
+        with open('error_custodian.log', 'a') as f:
+            f.write(type(handler).__name__ + '\n')
+            if type(handler).__name__ == 'VaspErrorHandler':
+                f.write(str(handler.errors))
 
 if flag:
     vasptags = Vasp(restart=True)
@@ -71,8 +69,7 @@ if flag:
 
 
 print('{0}, {1}'.format(name, e_atoms))
-f = open('result.txt', 'a')
-f.write('{0}, {1}'.format(name, e_atoms))
-f.close()
+with open('result.txt', 'a') as f
+    f.write('{0}, {1}'.format(name, e_atoms))
 
 print((time.time() - start)/60, 'min')

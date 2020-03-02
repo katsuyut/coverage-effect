@@ -31,6 +31,5 @@ for d in [1.14, 1.15]:
             print('{0}, {1}'.format(r, e_atoms))
             filename = 'result-' + xc + '-' + \
                 str(d) + '-' + str(nsw) + '.txt'
-            f = open(filename, 'a')
-            f.write('{0}, {1}\n'.format(r, e_atoms))
-            f.close()
+            with open(filename, 'a') as f:
+                f.write('{0}, {1}\n'.format(r, e_atoms))

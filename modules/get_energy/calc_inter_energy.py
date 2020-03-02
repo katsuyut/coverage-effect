@@ -30,7 +30,7 @@ del atoms[[atom.index for atom in atoms if atom.tag != 0]]
 
 ### Set vasp ###
 kpoints = get_kpts(atoms)
-nb = get_nbands(atoms, 2)  # default value is 0.5
+# nb = get_nbands(atoms, 2)  # default value is 0.5
 
 tagdict = get_default_vasp_tags(xc)
 tagdict['kpts'] = kpoints
@@ -41,8 +41,7 @@ vasptags = set_vasp_tags(tagdict)
 e_atoms = get_energy(atoms, name[0:-5]+'__', vasptags, env)
 
 print('{0}, {1}'.format(name[0:-5]+'__'+name[-5:], e_atoms))
-f = open('result.txt', 'a')
-f.write('{0}, {1}'.format(name[0:-5]+'__'+name[-5:], e_atoms))
-f.close()
+with open('result.txt', 'a') as f:
+    f.write('{0}, {1}'.format(name[0:-5]+'__'+name[-5:], e_atoms))
 
 print((time.time() - start)/60, 'min')
