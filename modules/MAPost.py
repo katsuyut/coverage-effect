@@ -316,7 +316,8 @@ class make_database():
         converged = np.max(np.abs(self.ratoms.get_forces())) < 0.03
         not_moved = get_maximum_movement(self.filename) < 1.5
         kept_sites = igroups == rgroups
-        if converged and not_moved and kept_sites:
+        E_not_exceeded = ((totaladsene/tot < 2.0) and (totaladsene/tot > -2.0))
+        if converged and not_moved and kept_sites and E_not_exceeded:
             isvalid = True
         else:
             isvalid = False
@@ -338,7 +339,7 @@ class make_database():
         dic['aveadsE/suratom'] = totaladsene/tot
         dic['aveadsE/ads'] = totaladsene/numads
         dic['E_int_space'] = intene
-        dic['E_each_ads'] = None
+        dic['sumE_each_ads'] = None
         dic['area'] = area
         dic['density'] = numads/area
         dic['igroups'] = igroups
@@ -349,6 +350,7 @@ class make_database():
         dic['converged'] = 'yes' if converged else 'no'
         dic['not_moved'] = 'yes' if not_moved else 'no'
         dic['kept_sites'] = 'yes' if kept_sites else 'no'
+        dic['E_not_exceeded'] = 'yes' if E_not_exceeded else 'no'
         dic['minimum_distance'] = None
         dic['ads_dist2'] = None
         dic['ads_dist3'] = None
@@ -382,13 +384,15 @@ class make_database():
                                                 'xc': data['xc'], 'adsorbate': data['adsorbate'],
                                                 'rgroups': [site]})
             if refdata == None:
-                print(
-                    'Reference data is invalid. Each adsorption energy cannnot be calculated.')
+                print('No reference data found. Each adsorption energy cannnot be calculated.')
+                return None
+            elif refdata['isvalid'] == 'no':
+                print('Reference data is invalid. Each adsorption energy cannot be calculated.')
                 return None
             else:
                 E_each_ads.append(refdata['totaladsE'])
-
-        return E_each_ads
+        sumE_each_ads = sum(E_each_ads)
+        return sumE_each_ads
 
     def update_database_Eeach(self):
         """
@@ -397,9 +401,9 @@ class make_database():
         if self.numads <= 1:
             print('This function is for surface with more than 2 adsorbates.')
             return None
-        E_each_ads = self.get_energy_for_each_adsorbates()
+        sumE_each_ads = self.get_energy_for_each_adsorbates()
         self.collection.find_one_and_update(
-            {'name': self.filename}, {'$set': {'E_each_ads': E_each_ads}})
+            {'name': self.filename}, {'$set': {'sumE_each_ads': sumE_each_ads}})
         print(self.filename, ' E_each_ads updated.')
 
     def update_database_adsorbates_correlation(self, maximumdistance=3):
@@ -445,5 +449,6 @@ class make_database():
             return data[0]
 
     def delete_from_database(self):
-        self.collection.delete_many({'name': self.filename})
-        print(self.filename, 'deleted')
+        if self.check_database():
+            self.collection.delete_many({'name': self.filename})
+            print(self.filename, 'deleted')
