@@ -71,6 +71,6 @@ if flag:
 print('{0}, {1}'.format(name, e_atoms))
 with open('result.txt', 'a') as f:
     f.write('{0}, {1}\n'.format(name, e_atoms))
-    f.write((time.time() - start)/60, 'min')
+    f.write('{0} min'.format((time.time() - start)/60))
 
 print((time.time() - start)/60, 'min')

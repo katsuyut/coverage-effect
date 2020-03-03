@@ -340,6 +340,7 @@ class make_database():
         dic['aveadsE/ads'] = totaladsene/numads
         dic['E_int_space'] = intene
         dic['sumE_each_ads'] = None
+        dic['E_residue'] = None
         dic['area'] = area
         dic['density'] = numads/area
         dic['igroups'] = igroups
@@ -355,8 +356,10 @@ class make_database():
         dic['ads_dist2'] = None
         dic['ads_dist3'] = None
 
-#         for key in dic.keys():
-#             print('{}: {}'.format(key, dic[key]))
+        self.E_int_space = intene
+        self.surfatomnum = tot
+        self.aveadsE_suratom = totaladsene/tot
+
         print(self.filename)
 
         return dic
@@ -384,17 +387,19 @@ class make_database():
                                                 'xc': data['xc'], 'adsorbate': data['adsorbate'],
                                                 'rgroups': [site]})
             if refdata == None:
-                print('No reference data found. Each adsorption energy cannnot be calculated.')
+                print(
+                    'No reference data found. Each adsorption energy cannnot be calculated.')
                 return None
             elif refdata['isvalid'] == 'no':
-                print('Reference data is invalid. Each adsorption energy cannot be calculated.')
+                print(
+                    'Reference data is invalid. Each adsorption energy cannot be calculated.')
                 return None
             else:
                 E_each_ads.append(refdata['totaladsE'])
         sumE_each_ads = sum(E_each_ads)
         return sumE_each_ads
 
-    def update_database_Eeach(self):
+    def update_Energy(self):
         """
         Assuming more than two adsorbates are on the surface.
         """
@@ -404,9 +409,18 @@ class make_database():
         sumE_each_ads = self.get_energy_for_each_adsorbates()
         self.collection.find_one_and_update(
             {'name': self.filename}, {'$set': {'sumE_each_ads': sumE_each_ads}})
-        print(self.filename, ' E_each_ads updated.')
 
-    def update_database_adsorbates_correlation(self, maximumdistance=3):
+        if sumE_each_ads:
+            E_residue = self.aveadsE_suratom - \
+                ((self.E_int_space + sumE_each_ads) / self.surfatomnum)
+            self.collection.find_one_and_update(
+                {'name': self.filename}, {'$set': {'E_residue': E_residue}})
+
+            print(self.filename, 'E_each_ads and E_residue updated.')
+        else:
+            print('Could not get Each adsorbates energy.')
+
+    def update_adsorbates_correlation(self, maximumdistance=3):
         """
         Assuming more than two adsorbates are on the surface.
         """
