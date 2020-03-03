@@ -352,8 +352,8 @@ class make_baresurface():
             a = (v0/2.0)**(1.0/3.0)*2.0
 
             with open('result.txt', 'a') as f:
-               f.write('{0}, {1}, {2}\n'.format(self.ele, self.xc, str(a)))
-    
+                f.write('{0}, {1}, {2}\n'.format(self.ele, self.xc, str(a)))
+
             self.a = a
 
         ### hcp ###
