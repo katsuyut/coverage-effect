@@ -50,22 +50,24 @@ else:
 ### use custodian and if error is found restart ###
 handlers = [VaspErrorHandler(), UnconvergedErrorHandler()]
 
-flag = False
-for handler in handlers:
-    if handler.check():
-        flag = True
-        handler.correct()
+for i in range(3):
+    flag = False
+    for handler in handlers:
+        if handler.check():
+            flag = True
+            handler.correct()
 
-        with open('error_custodian.log', 'a') as f:
-            f.write(type(handler).__name__ + '\n')
-            if type(handler).__name__ == 'VaspErrorHandler':
-                f.write(str(handler.errors))
+            with open('error_custodian.log', 'a') as f:
+                f.write('{0} loop \n'.format(i))
+                f.write(type(handler).__name__ + '\n')
+                if type(handler).__name__ == 'VaspErrorHandler':
+                    f.write(str(handler.errors))
 
-if flag:
-    vasptags = Vasp(restart=True)
-    atoms = vasptags.get_atoms()
-    atoms.set_calculator(vasptags)
-    e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
+    if flag:
+        vasptags = Vasp(restart=True)
+        atoms = vasptags.get_atoms()
+        atoms.set_calculator(vasptags)
+        e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
 
 
 print('{0}, {1}'.format(name, e_atoms))

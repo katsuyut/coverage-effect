@@ -7,6 +7,7 @@ import warnings
 import math
 import copy
 import re
+import pandas as pd
 from ase import Atoms, Atom
 from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate
 from ase.io import read, write
@@ -18,6 +19,7 @@ from pymatgen.analysis.local_env import VoronoiNN
 from MAUtil import *
 from MAInit import *
 from pymongo import MongoClient
+from sklearn.linear_model import LinearRegression
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
@@ -212,9 +214,10 @@ def get_adsorbates_correlation(b_mat, nads, maximumdistance=3):
         terminate = 5
 
     newb_mat = copy.deepcopy(b_mat)
-    done = np.zeros([nads//repeat**2])
+
     results = []
     i = 2
+    # mask is for omitting already counted adsorbate-adsorbate interaciton
     mask = np.ones(np.shape(newb_mat[nads//repeat**2*(math.floor(
         repeat**2/2.0)):nads//repeat**2*(math.ceil(repeat**2/2.0)), -nads:]))
     while True:
@@ -324,6 +327,7 @@ class make_database():
 
         dic['name'] = self.filename
         dic['isvalid'] = 'yes' if isvalid else 'no'
+        dic['ispredictable'] = 'No'
         dic['element'] = ele
         dic['face'] = face
         dic['unitlength'] = unit
@@ -340,13 +344,13 @@ class make_database():
         dic['aveadsE/ads'] = totaladsene/numads
         dic['E_int_space'] = intene
         dic['sumE_each_ads'] = None
-        dic['E_residue'] = None
+        dic['E_residue/suratom'] = None
         dic['area'] = area
         dic['density'] = numads/area
         dic['igroups'] = igroups
-#         dic['iposlis'] = [list(item) for item in iposlis]
+        # dic['iposlis'] = [list(item) for item in iposlis]
         dic['rgroups'] = rgroups
-#         dic['rposlis'] = [list(item) for item in rposlis]
+        # dic['rposlis'] = [list(item) for item in rposlis]
         dic['COlengthlis'] = COlengthlis
         dic['converged'] = 'yes' if converged else 'no'
         dic['not_moved'] = 'yes' if not_moved else 'no'
@@ -411,18 +415,21 @@ class make_database():
             {'name': self.filename}, {'$set': {'sumE_each_ads': sumE_each_ads}})
 
         if sumE_each_ads:
-            E_residue = self.aveadsE_suratom - \
+            E_residue_suratom = self.aveadsE_suratom - \
                 ((self.E_int_space + sumE_each_ads) / self.surfatomnum)
             self.collection.find_one_and_update(
-                {'name': self.filename}, {'$set': {'E_residue': E_residue}})
-
-            print(self.filename, 'E_each_ads and E_residue updated.')
+                {'name': self.filename}, {'$set': {'E_residue/suratom': E_residue_suratom}})
+            self.collection.find_one_and_update(
+                {'name': self.filename}, {'$set': {'ispredictable': 'yes'}})
+            print(self.filename, 'E_each_ads and E_residue/suratom updated.')
         else:
             print('Could not get Each adsorbates energy.')
 
     def update_adsorbates_correlation(self, maximumdistance=3):
         """
         Assuming more than two adsorbates are on the surface.
+        For unitlength = 2 atoms, bridge and hollow sites has interaction with distance = 3
+        even only with one adsorbates, but ignoreing that fact in this function.
         """
         if self.numads <= 1:
             print('This function is for surface with more than 2 adsorbates.')
@@ -466,3 +473,64 @@ class make_database():
         if self.check_database():
             self.collection.delete_many({'name': self.filename})
             print(self.filename, 'deleted')
+
+
+class dataset_utilizer():
+    def __init__(self, element, face):
+        client = MongoClient('localhost', 27017)
+        db = client.adsE_database
+        collection = db.adsE_collection
+
+        dic = {'element': element, 'face': face}
+        df = pd.DataFrame(list(collection.find(dic)))
+        cond1 = df['ispredictable'] == 'yes'
+        cond2 = df['isvalid'] == 'yes'
+        dfpred = df[cond1 & cond2]
+        dfpred = dfpred.reset_index()
+        self.df = df
+        self.dfpred = dfpred
+
+        dic = {'element': element}
+        df = pd.DataFrame(list(collection.find(dic)))
+        cond1 = df['ispredictable'] == 'yes'
+        cond2 = df['isvalid'] == 'yes'
+        dfpred_onlyele = df[cond1 & cond2]
+        dfpred_onlyele = dfpred.reset_index()
+        self.dfpred_onlyele = dfpred_onlyele
+
+    def fit_weight_from_specific_element_and_face(self):
+        dist3data = self.dfpred[self.dfpred['minimum_distance'] == 3]
+        dist2data = self.dfpred[self.dfpred['minimum_distance'] == 2]
+
+        X3 = np.array(dist3data['ads_dist3']).reshape(-1, 1)
+        y3 = np.array(dist3data['E_residue/suratom'])
+        y3_pred, weight3 = self.linearfit(X3, y3)
+
+        X2 = np.array(dist2data['ads_dist2']).reshape(-1, 1)
+        y2 = np.array(dist2data['E_residue/suratom']) - \
+            weight3 * dist2data['ads_dist3']
+        y2_pred, weight2 = self.linearfit(X2, y2)
+
+        return np.array([weight2, weight3])
+
+    def fit_weight_from_specific_element(self):
+        dist3data = self.dfpred_onlyele[self.dfpred_onlyele['minimum_distance'] == 3]
+        dist2data = self.dfpred_onlyele[self.dfpred_onlyele['minimum_distance'] == 2]
+
+        X3 = np.array(dist3data['ads_dist3']).reshape(-1, 1)
+        y3 = np.array(dist3data['E_residue/suratom'])
+        y3_pred, weight3 = self.linearfit(X3, y3)
+
+        X2 = np.array(dist2data['ads_dist2']).reshape(-1, 1)
+        y2 = np.array(dist2data['E_residue/suratom']) - \
+            weight3 * dist2data['ads_dist3']
+        y2_pred, weight2 = self.linearfit(X2, y2)
+
+        return np.array([weight2, weight3])
+
+    def linearfit(self, X, y):
+        Lin = LinearRegression(fit_intercept=False)
+        Lin.fit(X, y)
+        y_pred = Lin.predict(X)
+        slope = Lin.coef_
+        return y_pred, slope
