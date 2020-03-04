@@ -5,17 +5,17 @@ elements = ['Cu', 'Pt', 'Ag', 'Pd', 'Au', 'Ni', 'Al', 'Rh']
 # xcs = ['RPBE', 'RPBE-D2', 'vdW-DF', 'optB88-vdW', 'vdW-DF2', 'BEEF-vdW']
 xcs = ['RPBE']
 faces = ['100', '111', '110', '211']
-unitlengths = [1, 2, 3]
+unitlengths = [2, 3]
 adsorbate = 'CO'
 # maxmole = []
 
 for ele in elements:
-   bare = make_baresurface(ele)
-   for xc in xcs:
-       bare.calc_LC(xc)
-       for face in faces:
-           for unit in unitlengths:
-               bare.make_surface_pymatgen(face, unit, 4)
+    bare = make_baresurface(ele)
+    for xc in xcs:
+        bare.calc_LC(xc)
+        for face in faces:
+            for unit in unitlengths:
+                bare.make_surface_pymatgen(face, unit, 4)
 
 ### other than 221
 faces = ['100', '111', '110']

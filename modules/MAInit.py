@@ -335,7 +335,9 @@ class make_adsorbed_surface():
             else:
                 index[str(self.molenum[i])] = [i]
 
-        for i in range(self.maxmole):
+        # designated maxmole might not be acheived
+        maxmole = int(max(self.numdict.keys()))
+        for i in range(maxmole):
             for j in range(maximum):
                 if index[str(i+1)]:
                     chosen = random.choice(index[str(i+1)])
