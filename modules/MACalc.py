@@ -408,6 +408,10 @@ class make_baresurface():
                 atoms = fcc111(self.ele, a=self.a,
                                size=(unitlength, unitlength, layers),
                                vacuum=10.0)
+            elif face == '110':
+                atoms = fcc110(self.ele, a=self.a,
+                               size=(unitlength, unitlength, layers),
+                               vacuum=10.0)
             elif face == '211':
                 atoms = fcc211(self.ele, a=self.a,
                                size=(3, 2, layers),
@@ -460,7 +464,6 @@ def set_tag(atoms, face='plane'):
         for i in range(len(atoms)):
             for j in range(len(poslis)):
                 if atoms[i].position[2] == poslis[j]:
-                    print(len(poslis), j)
                     atoms[i].tag = (len(poslis) - j - 1)//3 + 1
     else:
         print('Does not support this surface now.')
