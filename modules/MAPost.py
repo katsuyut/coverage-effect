@@ -277,6 +277,7 @@ class make_database():
         res = re.match('(.*)_no.*', self.filename)
         barefile = res.group(1) + '.traj'
         bareatoms = query(barefile, 'spacom')
+        ibareatoms = init_query(barefile, 'spacom')
 
         adsfile = ads + '_' + xc + '.traj'
         COatoms = query(adsfile, 'scpacom')
@@ -288,7 +289,7 @@ class make_database():
 
         ### calc surface atom number ###
         tot = 0
-        for atom in bareatoms:
+        for atom in ibareatoms:
             if atom.tag == 1:
                 tot += 1
 

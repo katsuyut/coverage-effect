@@ -17,7 +17,7 @@ from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.optimize import QuasiNewton
 from ase.build import bulk, add_adsorbate, rotate
-from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, hcp0001
+from ase.build import fcc100, fcc111, fcc110, fcc211, bcc100, bcc111, bcc110, hcp0001
 
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
@@ -396,6 +396,9 @@ class make_baresurface():
             self.c = c
 
     def make_surface_pymatgen(self, face, unitlength, layers):
+        '''
+        Face 211 does not take unitlength
+        '''
         if self.structure == 'fcc':
             if face == '100':
                 atoms = fcc100(self.ele, a=self.a,
@@ -404,6 +407,10 @@ class make_baresurface():
             elif face == '111':
                 atoms = fcc111(self.ele, a=self.a,
                                size=(unitlength, unitlength, layers),
+                               vacuum=10.0)
+            elif face == '211':
+                atoms = fcc111(self.ele, a=self.a,
+                               size=(3, 2, layers),
                                vacuum=10.0)
             else:
                 print('This surface is currently unavailable')
@@ -439,13 +446,23 @@ class make_baresurface():
 
         self.atoms = atoms
 
-    def set_tag(self, atoms):
+    def set_tag(self, atoms, face='plane'):
         poslis = list(set(atoms.get_positions()[:, 2]))
         poslis.sort()
 
-        for i in range(len(atoms)):
-            for j in range(len(poslis)):
-                if atoms[i].position[2] == poslis[j]:
-                    atoms[i].tag = len(poslis) - j
+        if face == 'place':
+            for i in range(len(atoms)):
+                for j in range(len(poslis)):
+                    if atoms[i].position[2] == poslis[j]:
+                        atoms[i].tag = len(poslis) - j
+        elif face == '211':
+            for i in range(len(atoms)):
+                for j in range(len(poslis)):
+                    if atoms[i].position[2] == poslis[j]:
+                        print(len(poslis), j)
+                        atoms[i].tag = (len(poslis) - j - 1)//3 + 1
+        else:
+            print('Does not support this surface now.')
+            return None
 
         return atoms

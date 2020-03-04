@@ -297,6 +297,7 @@ class make_adsorbed_surface():
         self.adsorbate = query(adsorbatename+'.traj', env='spacom')
 
     def make_surface(self, maxmole, mindist):
+        self.maxmole = maxmole
         adseles = get_all_elements(self.adsorbate)
         baresurface, initadsites = remove_adsorbate(self.initatoms, adseles)
         bareadsites = get_adsorption_sites(baresurface, False)
@@ -321,10 +322,30 @@ class make_adsorbed_surface():
         self.numdict = numdict
         self.molenum = molenum
 
-    def write_trajectory(self):
-        for i in range(len(self.allatoms)):
-            outname = self.surfacename + str('_no') + str('{0:03d}'.format(i+1)) + '_CO_n' + str(
-                self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
-            print(outname)
-            outpath = initpath + str(outname)
-            self.allatoms[i].write(outpath)
+    def write_trajectory(self, maximum=15):
+        """
+        This is for writing trajectory files in init folder.
+        Maximum number of configurations is set. This is for each number of adsorbates.
+        """
+        # get index of configurations for each moleculer numbers
+        index = {}
+        for i in range(len(self.molenum)):
+            if str(self.molenum[i]) in index.keys():
+                index[str(self.molenum[i])].append(i)
+            else:
+                index[str(self.molenum[i])] = [i]
+
+        for i in range(self.maxmole):
+            for j in range(maximum):
+                if index[str(i+1)]:
+                    chosen = random.choice(index[str(i+1)])
+                    index[str(i+1)].remove(chosen)
+
+                    outname = self.surfacename + str('_no') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
+                        self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
+                    print(outname)
+                    outpath = initpath + str(outname)
+                    self.allatoms[chosen].write(outpath)
+
+                else:
+                    break
