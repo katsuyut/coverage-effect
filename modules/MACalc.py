@@ -409,9 +409,10 @@ class make_baresurface():
                                size=(unitlength, unitlength, layers),
                                vacuum=10.0)
             elif face == '211':
-                atoms = fcc111(self.ele, a=self.a,
+                atoms = fcc211(self.ele, a=self.a,
                                size=(3, 2, layers),
                                vacuum=10.0)
+                atoms = set_tag(atoms, '211')
             else:
                 print('This surface is currently unavailable')
 
@@ -437,7 +438,7 @@ class make_baresurface():
         atoms = atom.repeat([unitlength, unitlength, height])
         atoms.center(vacuum=10, axis=2)
 
-        atoms = self.set_tag(atoms)
+        atoms = set_tag(atoms)
 
         name = self.ele + '_' + face + '_u' + \
             str(unitlength) + '_' + self.xc + '.traj'
@@ -446,23 +447,23 @@ class make_baresurface():
 
         self.atoms = atoms
 
-    def set_tag(self, atoms, face='plane'):
-        poslis = list(set(atoms.get_positions()[:, 2]))
-        poslis.sort()
+def set_tag(atoms, face='plane'):
+    poslis = list(set(atoms.get_positions()[:, 2]))
+    poslis.sort()
 
-        if face == 'place':
-            for i in range(len(atoms)):
-                for j in range(len(poslis)):
-                    if atoms[i].position[2] == poslis[j]:
-                        atoms[i].tag = len(poslis) - j
-        elif face == '211':
-            for i in range(len(atoms)):
-                for j in range(len(poslis)):
-                    if atoms[i].position[2] == poslis[j]:
-                        print(len(poslis), j)
-                        atoms[i].tag = (len(poslis) - j - 1)//3 + 1
-        else:
-            print('Does not support this surface now.')
-            return None
+    if face == 'place':
+        for i in range(len(atoms)):
+            for j in range(len(poslis)):
+                if atoms[i].position[2] == poslis[j]:
+                    atoms[i].tag = len(poslis) - j
+    elif face == '211':
+        for i in range(len(atoms)):
+            for j in range(len(poslis)):
+                if atoms[i].position[2] == poslis[j]:
+                    print(len(poslis), j)
+                    atoms[i].tag = (len(poslis) - j - 1)//3 + 1
+    else:
+        print('Does not support this surface now.')
+        return None
 
-        return atoms
+    return atoms
