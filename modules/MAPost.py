@@ -41,7 +41,6 @@ def get_maximum_movement(name):
 
     return maxdiff
 
-
 def get_adsorbates_position_info(file, flag=0):
     '''
     if flag == 0 then calc both init and relaxed
@@ -52,45 +51,14 @@ def get_adsorbates_position_info(file, flag=0):
     group = create_site_group(bareatoms)
     cell = bareatoms.cell
 
-    def assign_group(groups, poslis):
-        for i in range(len(poslis)):
-            mindist = 10000
-            assign = None
-            for j in range(len(group)):
-                for k in range(len(group[j])):
-                    # dist = np.linalg.norm(poslis[i][:2] - group[j][k][:2])
-                    dist = min(np.linalg.norm(poslis[i][:2] - group[j][k][:2]),
-                               np.linalg.norm(
-                                   (poslis[i] + cell[0])[:2] - group[j][k][:2]),
-                               np.linalg.norm(
-                                   (poslis[i] - cell[0])[:2] - group[j][k][:2]),
-                               np.linalg.norm(
-                                   (poslis[i] + cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm(
-                                   (poslis[i] - cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm(
-                                   (poslis[i] + cell[0] + cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm(
-                                   (poslis[i] + cell[0] - cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm(
-                                   (poslis[i] - cell[0] + cell[1])[:2] - group[j][k][:2]),
-                               np.linalg.norm(
-                                   (poslis[i] - cell[0] - cell[1])[:2] - group[j][k][:2])
-                               )
-                    if dist < mindist:
-                        mindist = dist
-                        assign = j
-            groups.append(assign)
-        return groups
-
     igroups = []
-    igroups = assign_group(igroups, iposlis)
+    igroups = assign_group(group, iposlis, cell)
 
     if flag == 0:
         ratoms = query(file, 'spacom')
         bareatoms, rposlis = remove_adsorbate(ratoms, ['C', 'O'])
         rgroups = []
-        rgroups = assign_group(rgroups, rposlis)
+        rgroups = assign_group(group, rposlis, cell)
 
         return igroups, iposlis, rgroups, rposlis
 
@@ -261,6 +229,7 @@ class make_database():
         db = client.adsE_database
         self.collection = db.adsE_collection
         print('-----------------------------------------------------------')
+        print(filename)
 
     def make_json(self):
         dic = {}
@@ -409,7 +378,7 @@ class make_database():
         Assuming more than two adsorbates are on the surface.
         """
         if self.numads <= 1:
-            print('This function is for surface with more than 2 adsorbates.')
+            print('Updating energy is for surface with more than 2 adsorbates.')
             return None
         sumE_each_ads = self.get_energy_for_each_adsorbates()
         self.collection.find_one_and_update(
@@ -422,7 +391,7 @@ class make_database():
                 {'name': self.filename}, {'$set': {'E_residue/suratom': E_residue_suratom}})
             self.collection.find_one_and_update(
                 {'name': self.filename}, {'$set': {'ispredictable': 'yes'}})
-            print(self.filename, 'E_each_ads and E_residue/suratom updated.')
+            print('E_each_ads and E_residue/suratom updated.')
         else:
             print('Could not get Each adsorbates energy.')
 
@@ -433,7 +402,7 @@ class make_database():
         even only with one adsorbates, but ignoreing that fact in this function.
         """
         if self.numads <= 1:
-            print('This function is for surface with more than 2 adsorbates.')
+            print('Adsorbate correlatioin is for surface with more than 2 adsorbates.')
             return None
 
         if maximumdistance == 3:
@@ -457,7 +426,7 @@ class make_database():
             {'name': self.filename}, {'$set': {'ads_dist2': correlation[0][1]}})
         self.collection.find_one_and_update(
             {'name': self.filename}, {'$set': {'ads_dist3': correlation[1][1]}})
-        print(self.filename, 'Adsorbate correlation updated.')
+        print('Adsorbate correlation updated.')
 
     def check_database(self):
         data = list(self.collection.find({'name': self.filename}))
@@ -483,11 +452,14 @@ class dataset_utilizer():
         collection = db.adsE_collection
 
         dic = {'element': element, 'face': face}
-        df = pd.DataFrame(list(collection.find(dic)))
-        cond1 = df['ispredictable'] == 'yes'
-        cond2 = df['isvalid'] == 'yes'
-        dfpred = df[cond1 & cond2]
+        dfall = pd.DataFrame(list(collection.find(dic)))
+        cond1 = dfall['isvalid'] == 'yes'
+        cond2 = dfall['ispredictable'] == 'yes'
+        df = dfall[cond1]
+        df = df.reset_index()
+        dfpred = dfall[cond1 & cond2]
         dfpred = dfpred.reset_index()
+        self.dfall = dfall
         self.df = df
         self.dfpred = dfpred
 

@@ -55,3 +55,36 @@ def get_all_energy():
                     print('{0}, {1}'.format(filename, energy))
                 except:
                     print('No energy')
+
+
+def assign_group(group, poslis, cell):
+    groups = []
+    for i in range(len(poslis)):
+        mindist = 10000
+        assign = None
+        for j in range(len(group)):
+            for k in range(len(group[j])):
+                # dist = np.linalg.norm(poslis[i][:2] - group[j][k][:2])
+                dist = min(np.linalg.norm(poslis[i][:2] - group[j][k][:2]),
+                           np.linalg.norm(
+                    (poslis[i] + cell[0])[:2] - group[j][k][:2]),
+                    np.linalg.norm(
+                    (poslis[i] - cell[0])[:2] - group[j][k][:2]),
+                    np.linalg.norm(
+                    (poslis[i] + cell[1])[:2] - group[j][k][:2]),
+                    np.linalg.norm(
+                    (poslis[i] - cell[1])[:2] - group[j][k][:2]),
+                    np.linalg.norm(
+                    (poslis[i] + cell[0] + cell[1])[:2] - group[j][k][:2]),
+                    np.linalg.norm(
+                    (poslis[i] + cell[0] - cell[1])[:2] - group[j][k][:2]),
+                    np.linalg.norm(
+                    (poslis[i] - cell[0] + cell[1])[:2] - group[j][k][:2]),
+                    np.linalg.norm(
+                    (poslis[i] - cell[0] - cell[1])[:2] - group[j][k][:2])
+                )
+                if dist < mindist:
+                    mindist = dist
+                    assign = j
+        groups.append(assign)
+    return groups

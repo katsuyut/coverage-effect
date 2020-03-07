@@ -15,6 +15,9 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from MAUtil import *
+from pymongo import MongoClient
+import requests
+
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
@@ -137,112 +140,6 @@ def adjust_possitions(sites):
     return modsites
 
 
-def get_unique_surface(atoms, bareatoms, adsites, maxmole, mindist, initadsites, group, adsorbate):
-    '''
-    Given surface Atom object and all possible attaching site positions, create all possible unique attached Atom object.
-    Can exclude by the maximum number of molecules or minimum distance. 
-
-    return
-    allatoms   :all possible Atom object [[[x,y,z]], [[a,b,c]], [[x,y,z],[a,b,c]]]
-    allused    :attached sites for each Atom object
-    mindistlis :minimum distance of molecule for each Atom object
-    numdict    :dictionary, key=number of attached molecule, value=number of object created
-    '''
-    start = time.time()
-
-    height = 1.85
-    allatoms = []
-    allused = []
-    molenum = []
-    usedadsites = []
-    count = 0
-
-    allused = copy.deepcopy(initadsites)
-    allused = list(initadsites)
-
-    def recursive(ratoms, rsites, rused, molnum, tmpused, count):
-        molnum += 1
-
-        if molnum > maxmole:
-            return None
-
-        for i in range(len(rsites)):
-            nextatoms = copy.deepcopy(ratoms)
-            nextused = copy.deepcopy(rused)
-            if molnum == 1:
-                tmpused = copy.deepcopy(allused)
-                # print('Used initialized!')
-
-            add_adsorbate(nextatoms, adsorbate, height, rsites[i][:2])
-            nextused.append(list(rsites[i]))
-
-            dist = get_minimum_distance(nextused, bareatoms.cell)
-            if dist < mindist:
-                # print('Distance {0:.2f} is below {1}'.format(dist, mindist))
-                continue
-
-            # When next sites candidates is symmetrycally same as in the sites previously used, skip
-            if check_if_same(bareatoms, nextused, tmpused):
-                continue
-
-            allatoms.append(nextatoms)
-            allused.append(nextused)
-            tmpused.append(nextused)
-            molenum.append(molnum)
-
-            # print('{0}-------{1}-------'.format(molnum, nextatoms.symbols)) # keep it for debugging
-            if molnum == initmol+1:
-                print('progress: {}/{}, {:.2f} min'.format(count,
-                                                           len(rsites), (time.time() - start)/60))
-                count += 1
-
-            struct = AseAtomsAdaptor.get_structure(nextatoms)
-            nextsites = AdsorbateSiteFinder(struct).symm_reduce(adsites)
-            indexlist = []
-
-            for j in range(len(nextused)):
-                for k in range(len(nextsites)):
-                    if np.allclose(nextused[j], nextsites[k], atol=0.01):
-                        indexlist.append(k)
-
-            for j in range(len(usedadsites)):
-                for k in range(len(nextsites)):
-                    if np.allclose(usedadsites[j], nextsites[k], atol=0.01):
-                        indexlist.append(k)
-
-            indexlist.sort(reverse=True)
-            for j in range(len(indexlist)):
-                nextsites.pop(indexlist[j])
-
-            recursive(nextatoms, nextsites, nextused,
-                      molnum, tmpused, count)
-
-            if molnum == 1:
-                for j in range(len(group)):
-                    if rsites[i] in group[j]:
-                        for k in range(len(group[j])):
-                            usedadsites.append(group[j][k])
-
-    redadsites_ = get_adsorption_sites(atoms, True)['all']
-    redadsites = [list(i) for i in redadsites_]
-    initmol = len(initadsites)
-
-    recursive(atoms, redadsites, list(initadsites), initmol, allused, count)
-    mindistlis = get_minimum_distance_list(allused, bareatoms.cell)
-
-    numdict = {}
-    for site in allused:
-        if str(len(site)) not in numdict.keys():
-            numdict[str(len(site))] = 1
-        else:
-            numdict[str(len(site))] += 1
-
-    print('\nadsorbates : # of structures, {}'.format(numdict))
-    print('total structures: {}'.format(len(allatoms)))
-
-    return allatoms, mindistlis, numdict, molenum
-
-
 def get_minimum_distance(comb, cell):
     '''
     Given one combination of adsorption sites(2d-array), return minimum distance.
@@ -296,14 +193,33 @@ class make_adsorbed_surface():
         self.initatoms = init_query(surfacename + '.traj', env='spacom')
         self.adsorbate = query(adsorbatename+'.traj', env='spacom')
 
-    def make_surface(self, maxmole, mindist):
+    def make_surface(self, maxmole, mindist, get_only_stable=False):
         self.maxmole = maxmole
+        self.get_only_stable = get_only_stable
         adseles = get_all_elements(self.adsorbate)
         baresurface, initadsites = remove_adsorbate(self.initatoms, adseles)
         bareadsites = get_adsorption_sites(baresurface, False)
+        self.numbaredadsites = len(
+            get_adsorption_sites(baresurface, False)['all'])
 
         allbareadsites = np.array(bareadsites['all'])
         group = create_site_group(baresurface)
+        self.group = group
+
+        if get_only_stable:
+            eliminatedgroup = self.choose_eliminated_groups()
+            self.eliminatedgroup = eliminatedgroup
+
+            # eliminate sites candidates
+            cell = baresurface.cell
+            self.cell = cell
+            baregroups = assign_group(group, allbareadsites, cell)
+
+            index = []
+            for i in range(len(baregroups)):
+                if [baregroups[i]] in eliminatedgroup:
+                    index.append(i)
+            allbareadsites = np.delete(allbareadsites, index, axis=0)
 
         ind = []
         for i in range(len(allbareadsites)):
@@ -315,12 +231,153 @@ class make_adsorbed_surface():
         inuse = allbareadsites[ind]
 
         allatoms, mindistlis, numdict, molenum \
-            = get_unique_surface(self.initatoms, baresurface, adsites, maxmole, mindist, initadsites, group, self.adsorbate)
+            = self.get_unique_surface(self.initatoms, baresurface, adsites, maxmole, mindist, initadsites, group, self.adsorbate)
 
         self.allatoms = allatoms
         self.mindistlis = mindistlis
         self.numdict = numdict
         self.molenum = molenum
+
+    def choose_eliminated_groups(self):
+        client = MongoClient('localhost', 27017)
+        db = client.adsE_database
+        collection = db.adsE_collection
+
+        res = re.match('(.*)_(.*)_u(.*)_(.*)', self.surfacename)
+        ele = res.group(1)
+        face = res.group(2)
+        unit = int(res.group(3))
+        xc = res.group(4)
+        res = re.match('(.*)_(.*)', self.adsorbatename)
+        adsorbate = res.group(1)
+
+        refdata = list(collection.find({'element': ele, 'face': face, 'unitlength': 2,
+                                        'xc': xc, 'adsorbate': adsorbate, 'numberofads': 1}))
+
+        # choose groups to be eliminated from site candidate
+        eliminatedgroup = []
+        for data in refdata:
+            if data['isvalid'] == 'no':
+                eliminatedgroup.append(data['igroups'])
+
+        return eliminatedgroup
+
+    def get_unique_surface(self, atoms, bareatoms, adsites, maxmole, mindist, initadsites, group, adsorbate):
+        '''
+        Given surface Atom object and all possible attaching site positions, create all possible unique attached Atom object.
+        Can exclude by the maximum number of molecules or minimum distance. 
+
+        return
+        allatoms   :all possible Atom object [[[x,y,z]], [[a,b,c]], [[x,y,z],[a,b,c]]]
+        allused    :attached sites for each Atom object
+        mindistlis :minimum distance of molecule for each Atom object
+        numdict    :dictionary, key=number of attached molecule, value=number of object created
+        '''
+        start = time.time()
+
+        height = 1.85
+        allatoms = []
+        allused = []
+        molenum = []
+        usedadsites = []
+        count = 0
+
+        allused = copy.deepcopy(initadsites)
+        allused = list(initadsites)
+
+        def recursive(ratoms, rsites, rused, molnum, tmpused, count):
+            molnum += 1
+
+            if molnum > maxmole:
+                return None
+
+            for i in range(len(rsites)):
+                nextatoms = copy.deepcopy(ratoms)
+                nextused = copy.deepcopy(rused)
+                if molnum == 1:
+                    tmpused = copy.deepcopy(allused)
+                    # print('Used initialized!')
+
+                add_adsorbate(nextatoms, adsorbate, height, rsites[i][:2])
+                nextused.append(list(rsites[i]))
+
+                dist = get_minimum_distance(nextused, bareatoms.cell)
+                if dist < mindist:
+                    # print('Distance {0:.2f} is below {1}'.format(dist, mindist))
+                    continue
+
+                # When next sites candidates is symmetrycally same as in the sites previously used, skip
+                if check_if_same(bareatoms, nextused, tmpused):
+                    continue
+
+                allatoms.append(nextatoms)
+                allused.append(nextused)
+                tmpused.append(nextused)
+                molenum.append(molnum)
+
+                # print('{0}-------{1}-------'.format(molnum, nextatoms.symbols)) # keep it for debugging
+                if molnum == initmol+1:
+                    print('progress: {}/{}, {:.2f} min'.format(count,
+                                                               len(rsites), (time.time() - start)/60))
+                    count += 1
+
+                struct = AseAtomsAdaptor.get_structure(nextatoms)
+                nextsites = AdsorbateSiteFinder(struct).symm_reduce(adsites)
+                indexlist = []
+
+                for j in range(len(nextused)):
+                    for k in range(len(nextsites)):
+                        if np.allclose(nextused[j], nextsites[k], atol=0.01):
+                            indexlist.append(k)
+
+                for j in range(len(usedadsites)):
+                    for k in range(len(nextsites)):
+                        if np.allclose(usedadsites[j], nextsites[k], atol=0.01):
+                            indexlist.append(k)
+
+                indexlist.sort(reverse=True)
+                for j in range(len(indexlist)):
+                    nextsites.pop(indexlist[j])
+
+                recursive(nextatoms, nextsites, nextused,
+                          molnum, tmpused, count)
+
+                if molnum == 1:
+                    for j in range(len(group)):
+                        if rsites[i] in group[j]:
+                            for k in range(len(group[j])):
+                                usedadsites.append(group[j][k])
+
+        redadsites_ = get_adsorption_sites(atoms, True)['all']
+        redadsites = [list(i) for i in redadsites_]
+
+        if self.get_only_stable:
+            # eliminate sites candidates
+            redadsitesgroups = assign_group(self.group, redadsites_, self.cell)
+            index = []
+            for i in range(len(redadsitesgroups)):
+                if [redadsitesgroups[i]] in self.eliminatedgroup:
+                    index.append(i)
+            redadsites_ = np.delete(redadsites_, index, axis=0)
+            redadsites = [list(i) for i in redadsites_]
+
+        initmol = len(initadsites)
+
+        recursive(atoms, redadsites, list(
+            initadsites), initmol, allused, count)
+        mindistlis = get_minimum_distance_list(allused, bareatoms.cell)
+
+        numdict = {}
+        for site in allused:
+            if str(len(site)) not in numdict.keys():
+                numdict[str(len(site))] = 1
+            else:
+                numdict[str(len(site))] += 1
+
+        print('adsorbates : # of structures, {}'.format(numdict))
+        print('total structures: {}\n'.format(len(allatoms)))
+
+        return allatoms, mindistlis, numdict, molenum
 
     def write_trajectory(self, maximum=15):
         """
@@ -335,19 +392,60 @@ class make_adsorbed_surface():
             else:
                 index[str(self.molenum[i])] = [i]
 
-        # designated maxmole might not be acheived
-        maxmole = int(max(self.numdict.keys()))
-        for i in range(maxmole):
-            for j in range(maximum):
-                if index[str(i+1)]:
-                    chosen = random.choice(index[str(i+1)])
-                    index[str(i+1)].remove(chosen)
+        if not self.get_only_stable:
+            # designated maxmole might not be acheived
+            maxmole = int(max(self.numdict.keys()))
+            for i in range(maxmole):
+                for j in range(maximum):
+                    if index[str(i+1)]:
+                        chosen = random.choice(index[str(i+1)])
+                        index[str(i+1)].remove(chosen)
 
-                    outname = self.surfacename + str('_no') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
-                        self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
-                    print(outname)
-                    outpath = initpath + str(outname)
-                    self.allatoms[chosen].write(outpath)
+                        outname = self.surfacename + str('_no') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
+                            self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
+                        print(outname)
+                        outpath = initpath + str(outname)
+                        self.allatoms[chosen].write(outpath)
 
-                else:
-                    break
+                    else:
+                        break
+        else:
+            # designated maxmole might not be acheived
+            maxmole = int(max(self.numdict.keys()))
+            for i in range(1, maxmole):
+                for j in range(maximum):
+                    if index[str(i+1)]:
+                        chosen = random.choice(index[str(i+1)])
+                        index[str(i+1)].remove(chosen)
+
+                        outname = self.surfacename + str('_rno') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
+                            self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
+                        print(outname)
+                        outpath = initpath + str(outname)
+                        self.allatoms[chosen].write(outpath)
+
+                    else:
+                        break
+            self.numbaredadsites
+
+
+def request_cif_to_materials_project(id):
+    '''
+    Request cif data to mateials project and get atoms
+    You need materials project api_key as MAPIKEY in your environment varible
+    '''
+    url = 'https://www.materialsproject.org/rest/v2/materials/' + \
+        id + '/vasp?API_KEY=' + os.environ['MAPIKEY']
+    response = requests.get(url)
+    cifdata = response.json()['response'][0]['cif']
+    formula = response.json()['response'][0]['pretty_formula']
+    cifpath = './cif/'+ id + '_' + formula + '.cif'
+    print('material: {0}'.format(formula))
+    if os.path.exists(cifpath):
+        print('Already in cifpath')
+    else:
+        with open(cifpath, 'w') as f:
+            f.write(cifdata)
+            print('Added to cifpath')
+    atoms = read(cifpath)
+    return atoms

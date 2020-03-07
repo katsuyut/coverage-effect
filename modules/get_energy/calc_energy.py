@@ -48,7 +48,9 @@ else:
 
 
 ### use custodian and if error is found restart ###
-handlers = [VaspErrorHandler(), UnconvergedErrorHandler()]
+# handlers = [VaspErrorHandler(), UnconvergedErrorHandler()]
+# UnconvergedErrorHandler seems to delete EDIFFG tag and not good for this calculation.
+handlers = [VaspErrorHandler()]
 
 flag = False
 for handler in handlers:
