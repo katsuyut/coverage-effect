@@ -41,6 +41,7 @@ def get_maximum_movement(name):
 
     return maxdiff
 
+
 def get_adsorbates_position_info(file, flag=0):
     '''
     if flag == 0 then calc both init and relaxed
@@ -165,7 +166,7 @@ def get_repeated_atoms(atoms, repeat):
     for i in reversed(range(len(cpatoms))):
         if cpatoms[i].tag == 3 or cpatoms[i].tag == 4:
             cpatoms.pop(i)
-    cpatoms = cpatoms.repeat([repeat, repeat, 1])
+    cpatoms = cpatoms.repeat(repeat)
     return cpatoms
 
 
@@ -406,7 +407,7 @@ class make_database():
             return None
 
         if maximumdistance == 3:
-            repeat = 3
+            repeat = [3, 3, 1]
             rratoms = get_repeated_atoms(self.ratoms, repeat)
         else:
             print('Currently maximum distance is 3.')

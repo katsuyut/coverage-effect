@@ -15,7 +15,7 @@ from ase.visualize import view
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
-
+cifpath = '/home/katsuyut/research/coverage-effect/cif/'
 
 def query(name, env='spacom'):
     path = databasepath + name
@@ -41,6 +41,16 @@ def init_query(name, env='spacom'):
         print('No file named {} in init'.format(name))
         return None
 
+def cif_query(name, env='spacom'):
+    path = cifpath + name
+    try:
+        atoms = read(path)
+        if env == 'local':
+            view(atoms)
+        return atoms
+    except IOError as e:
+        print('No file named {} in cif'.format(name))
+        return None
 
 def get_all_energy():
     files = os.listdir(databasepath)
