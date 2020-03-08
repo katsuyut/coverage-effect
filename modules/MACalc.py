@@ -20,6 +20,7 @@ from ase.build import bulk, add_adsorbate, rotate
 from ase.build import fcc100, fcc111, fcc110, fcc211, bcc100, bcc111, bcc110, hcp0001
 from MAUtil import *
 
+
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
 zvalpath = '/home/katsuyut/research/coverage-effect/zval.txt'
@@ -317,10 +318,10 @@ def get_equiblium_bulk(mpid, xc='RPBE', env='spacom'):
                 formula, xc, str(a), str(c)))
 
         newcell = copy.deepcopy(cell)
-        newcell[0][0] = a * x
-        newcell[1][0] = a * x * np.cos(np.pi*2/3)
-        newcell[1][1] = a * x * np.sin(np.pi*2/3)
-        newcell[2][2] = c * y
+        newcell[0][0] = a
+        newcell[1][0] = a * np.cos(np.pi*2/3)
+        newcell[1][1] = a * np.sin(np.pi*2/3)
+        newcell[2][2] = c
         bulk.set_cell(newcell)
         trajpath = initpath + formula + '_' + xc + '.traj'
         bulk.write(trajpath)
