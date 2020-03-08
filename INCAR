@@ -1,5 +1,6 @@
 INCAR created by Atomic Simulation Environment
  ENCUT = 350.000000
+ VDW_S6 = 0.750000
  EDIFFG = -3.00e-02
  GGA = RP
  IBRION = 2
