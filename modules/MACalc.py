@@ -13,10 +13,12 @@ from ase.calculators.vasp import Vasp, Vasp2
 from ase.calculators.singlepoint import SinglePointCalculator as SPC
 from ase.constraints import FixAtoms
 from ase.eos import EquationOfState
+from ase.optimize import QuasiNewton
 from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.build import bulk, add_adsorbate, rotate
 from ase.build import fcc100, fcc111, fcc110, fcc211, bcc100, bcc111, bcc110, hcp0001
+from MAUtil import *
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
@@ -207,3 +209,118 @@ def get_energy(atoms, name, vasptags, env):
         tj.close()
 
     return e_atoms
+
+
+def get_equiblium_bulk(mpid, xc='RPBE', env='spacom'):
+    '''
+    Now can only deal with cubic, hexagonal and trigonal systems
+    OK:cubic trigonal tetragonal (This does not optimize angle for trigonal)
+    NG:others (orthohombic hexagona triclinic monoclinic)
+    '''
+    response = request_mp(mpid)
+    formula = response['pretty_formula']
+    crystal_system = response['spacegroup']['crystal_system']
+    eps = 0.03
+
+    bulk = cif_query(mpid+'_'+formula+'.cif')
+    cell = bulk.get_cell()
+    v = bulk.get_volume()
+
+    kpoints = get_kpts(bulk)
+    tagdict = get_default_vasp_tags(xc)
+    tagdict['kpts'] = kpoints
+    vasptags = set_vasp_tags(tagdict)
+
+    volumes = []
+    energies = []
+
+    # cubic and trigonal system
+    if crystal_system == 'cubic' or crystal_system == 'trigonal':
+        for x in np.linspace(1-eps, 1+eps, 5):
+            bulk.set_cell(cell * x, scale_atoms=True)
+
+            if env == 'local':
+                bulk.set_calculator(EMT())
+
+                dyn = QuasiNewton(bulk)
+                dyn.run(fmax=0.05)
+            elif env == 'spacom':
+                bulk.set_calculator(vasptags)
+
+            try:
+                energies.append(bulk.get_potential_energy())
+                volumes.append(bulk.get_volume())
+
+            except:
+                print('Error while calculating bulk energy!')
+
+        eos = EquationOfState(volumes, energies)
+        v0, e0, B = eos.fit()
+        ratio = (v0/v)**(1/3)
+        newcell = cell * ratio
+        a = newcell[0][0] * 2**0.5
+
+        with open('result.txt', 'a') as f:
+            f.write('{0}, {1}, {2}\n'.format(
+                formula, xc, str(a)))
+
+        bulk.set_cell(newcell)
+        trajpath = initpath + formula + '_' + xc + '.traj'
+        bulk.write(trajpath)
+
+    # hexagonal system
+    elif crystal_system == 'hexagonal':
+        a0 = cell[0][0]
+        c0 = cell[2][2]
+        a = []
+        c = []
+        for x in np.linspace(1-eps, 1+eps, 3):
+            for y in np.linspace(1-eps, 1+eps, 3):
+                calccell = copy.deepcopy(cell)
+                calccell[0][0] = a0 * x
+                calccell[1][0] = a0 * x * np.cos(np.pi*2/3)
+                calccell[1][1] = a0 * x * np.sin(np.pi*2/3)
+                calccell[2][2] = c0 * y
+                a.append(calccell[0][0])
+                c.append(calccell[2][2])
+
+                bulk.set_cell(calccell, scale_atoms=True)
+
+                if env == 'local':
+                    bulk.set_calculator(EMT())
+
+                    dyn = QuasiNewton(bulk)
+                    dyn.run(fmax=0.05)
+                elif env == 'spacom':
+                    bulk.set_calculator(vasptags)
+
+                try:
+                    energies.append(bulk.get_potential_energy())
+                    volumes.append(bulk.get_volume())
+
+                except:
+                    print('Error while calculating bulk energy!')
+
+        a = np.array(a)
+        c = np.array(c)
+        functions = np.array([a**0, a, c, a**2, a * c, c**2])
+        p = np.linalg.lstsq(functions.T, energies, rcond=-1)[0]
+
+        p0 = p[0]
+        p1 = p[1:3]
+        p2 = np.array([(2 * p[3], p[4]),
+                       (p[4], 2 * p[5])])
+        a, c = np.linalg.solve(p2.T, -p1)
+
+        with open('result.txt', 'a') as f:
+            f.write('{0}, {1}, {2}, {3}\n'.format(
+                formula, xc, str(a), str(c)))
+
+        newcell = copy.deepcopy(cell)
+        newcell[0][0] = a * x
+        newcell[1][0] = a * x * np.cos(np.pi*2/3)
+        newcell[1][1] = a * x * np.sin(np.pi*2/3)
+        newcell[2][2] = c * y
+        bulk.set_cell(newcell)
+        trajpath = initpath + formula + '_' + xc + '.traj'
+        bulk.write(trajpath)

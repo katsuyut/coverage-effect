@@ -13,15 +13,12 @@ from ase.constraints import FixAtoms
 from ase.io import read, write
 from ase.calculators.emt import EMT
 from ase.eos import EquationOfState
-from ase.optimize import QuasiNewton
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from MAUtil import *
-from MACalc import get_kpts, get_default_vasp_tags, set_vasp_tags
 from pymongo import MongoClient
-import requests
-
+from GASpyfuncs import *
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
@@ -186,133 +183,12 @@ def get_minimum_distance_list(combs, cell):
     return mindistlis
 
 
-class make_baresurface():
-    def __init__(self, mpid):
-        self.mpid = mpid
-        response = request_mp(mpid)
-        self.formula = response['pretty_formula']
-        self.crystal_system = response['spacegroup']['crystal_system']
-        self.eps = 0.03
-
-    def get_equiblium_bulk(self, xc='RPBE', env='spacom'):
-        '''
-        Now can only deal with cubic, hexagonal and trigonal systems
-        OK:cubic trigonal tetragonal (This does not optimize angle for trigonal)
-        NG:others (orthohombic hexagona triclinic monoclinic)
-        '''
-        self.xc = xc
-        bulk = cif_query(self.mpid+'_'+self.formula+'.cif')
-        self.bulk = bulk
-        cell = bulk.get_cell()
-        v = bulk.get_volume()
-
-        kpoints = get_kpts(bulk)
-        tagdict = get_default_vasp_tags(xc)
-        tagdict['kpts'] = kpoints
-        vasptags = set_vasp_tags(tagdict)
-
-        volumes = []
-        energies = []
-
-        # cubic and trigonal system
-        if self.crystal_system == 'cubic' or self.crystal_system == 'trigonal':
-            for x in np.linspace(1-self.eps, 1+self.eps, 5):
-                bulk.set_cell(cell * x, scale_atoms=True)
-
-                if env == 'local':
-                    bulk.set_calculator(EMT())
-
-                    dyn = QuasiNewton(bulk)
-                    dyn.run(fmax=0.05)
-                elif env == 'spacom':
-                    bulk.set_calculator(vasptags)
-
-                try:
-                    energies.append(bulk.get_potential_energy())
-                    volumes.append(bulk.get_volume())
-
-                except:
-                    print('Error while calculating bulk energy!')
-
-            eos = EquationOfState(volumes, energies)
-            v0, e0, B = eos.fit()
-            ratio = (v0/v)**(1/3)
-            newcell = cell * ratio
-            a = newcell[0][0] * 2**0.5
-
-            with open('result.txt', 'a') as f:
-                f.write('{0}, {1}, {2}\n'.format(
-                    self.formula, self.xc, str(a)))
-
-            bulk.set_cell(newcell)
-            trajpath = initpath + self.formula + '_' + xc + '.traj'
-            bulk.write(trajpath)
-
-        # hexagonal system
-        elif self.crystal_system == 'hexagonal':
-            a0 = cell[0][0]
-            c0 = cell[2][2]
-            a = []
-            c = []
-            for x in np.linspace(1-self.eps, 1+self.eps, 3):
-                for y in np.linspace(1-self.eps, 1+self.eps, 3):
-                    calccell = copy.deepcopy(cell)
-                    calccell[0][0] = a0 * x
-                    calccell[1][0] = a0 * x * np.cos(np.pi*2/3)
-                    calccell[1][1] = a0 * x * np.sin(np.pi*2/3)
-                    calccell[2][2] = c0 * y
-                    a.append(calccell[0][0])
-                    c.append(calccell[2][2])
-
-                    bulk.set_cell(calccell, scale_atoms=True)
-
-                    if env == 'local':
-                        bulk.set_calculator(EMT())
-
-                        dyn = QuasiNewton(bulk)
-                        dyn.run(fmax=0.05)
-                    elif env == 'spacom':
-                        bulk.set_calculator(vasptags)
-
-                    try:
-                        energies.append(bulk.get_potential_energy())
-                        volumes.append(bulk.get_volume())
-
-                    except:
-                        print('Error while calculating bulk energy!')
-
-            a = np.array(a)
-            c = np.array(c)
-            functions = np.array([a**0, a, c, a**2, a * c, c**2])
-            p = np.linalg.lstsq(functions.T, energies, rcond=-1)[0]
-
-            p0 = p[0]
-            p1 = p[1:3]
-            p2 = np.array([(2 * p[3], p[4]),
-                           (p[4], 2 * p[5])])
-            a, c = np.linalg.solve(p2.T, -p1)
-
-            with open('result.txt', 'a') as f:
-                f.write('{0}, {1}, {2}, {3}\n'.format(
-                    self.formula, self.xc, str(a), str(c)))
-
-            newcell = copy.deepcopy(cell)
-            newcell[0][0] = a * x
-            newcell[1][0] = a * x * np.cos(np.pi*2/3)
-            newcell[1][1] = a * x * np.sin(np.pi*2/3)
-            newcell[2][2] = c * y
-            bulk.set_cell(newcell)
-            trajpath = initpath + self.formula + '_' + xc + '.traj'
-            bulk.write(trajpath)
-
-
 def set_tag(atoms, face):
     '''
     Assuming 211 surface has [3,2,4] units.
     '''
     poslis = list(set(atoms.get_positions()[:, 2]))
     poslis.sort()
-    print(face)
 
     if face == [1, 0, 0] or face == [1, 1, 0] or face == [1, 1, 1] or face == [1, 1, 1]:
         for i in range(len(atoms)):
@@ -577,35 +453,3 @@ class make_adsorbed_surface():
                     else:
                         break
             self.numbaredadsites
-
-
-def request_mp(mpid):
-    '''
-    Request cif data to mateials project. Cif data is saved in cif folder is not exists.
-    You need materials project api_key as MAPIKEY in your environment varible
-
-    return
-    cifdata
-    formula
-    crystal system
-    '''
-    url = 'https://www.materialsproject.org/rest/v2/materials/' + \
-        mpid + '/vasp?API_KEY=' + os.environ['MAPIKEY']
-    response = requests.get(url)
-    cifdata = response.json()['response'][0]['cif']
-    formula = response.json()['response'][0]['pretty_formula']
-    path = cifpath + mpid + '_' + formula + '.cif'
-    if os.path.exists(path):
-        print('Already in cifpath')
-    else:
-        with open(path, 'w') as f:
-            f.write(cifdata)
-            print('Added to cifpath')
-
-    crystal_system = response.json(
-    )['response'][0]['spacegroup']['crystal_system']
-
-    print('material: {0}'.format(formula))
-    print('crystal system: {0}'.format(crystal_system))
-
-    return response.json()['response'][0]

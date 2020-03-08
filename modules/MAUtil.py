@@ -12,10 +12,12 @@ from ase import Atoms, Atom
 from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.visualize import view
+import requests
 
 databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
 cifpath = '/home/katsuyut/research/coverage-effect/cif/'
+
 
 def query(name, env='spacom'):
     path = databasepath + name
@@ -41,6 +43,7 @@ def init_query(name, env='spacom'):
         print('No file named {} in init'.format(name))
         return None
 
+
 def cif_query(name, env='spacom'):
     path = cifpath + name
     try:
@@ -51,6 +54,7 @@ def cif_query(name, env='spacom'):
     except IOError as e:
         print('No file named {} in cif'.format(name))
         return None
+
 
 def get_all_energy():
     files = os.listdir(databasepath)
@@ -65,6 +69,38 @@ def get_all_energy():
                     print('{0}, {1}'.format(filename, energy))
                 except:
                     print('No energy')
+
+
+def request_mp(mpid):
+    '''
+    Request cif data to mateials project. Cif data is saved in cif folder is not exists.
+    You need materials project api_key as MAPIKEY in your environment varible
+
+    return
+    cifdata
+    formula
+    crystal system
+    '''
+    url = 'https://www.materialsproject.org/rest/v2/materials/' + \
+        mpid + '/vasp?API_KEY=' + os.environ['MAPIKEY']
+    response = requests.get(url)
+    cifdata = response.json()['response'][0]['cif']
+    formula = response.json()['response'][0]['pretty_formula']
+    path = cifpath + mpid + '_' + formula + '.cif'
+    if os.path.exists(path):
+        print('Already in cifpath')
+    else:
+        with open(path, 'w') as f:
+            f.write(cifdata)
+            print('Added to cifpath')
+
+    crystal_system = response.json(
+    )['response'][0]['spacegroup']['crystal_system']
+
+    print('material: {0}'.format(formula))
+    print('crystal system: {0}'.format(crystal_system))
+
+    return response.json()['response'][0]
 
 
 def assign_group(group, poslis, cell):
