@@ -265,7 +265,7 @@ def get_equiblium_bulk(mpid, xc='RPBE', env='spacom'):
             f.write('{0}, {1}, {2}\n'.format(
                 formula, xc, str(a)))
 
-        bulk.set_cell(newcell)
+        bulk.set_cell(newcell, scale_atoms=True)
         trajpath = initpath + formula + '_' + xc + '.traj'
         bulk.write(trajpath)
 
@@ -322,6 +322,6 @@ def get_equiblium_bulk(mpid, xc='RPBE', env='spacom'):
         newcell[1][0] = a * np.cos(np.pi*2/3)
         newcell[1][1] = a * np.sin(np.pi*2/3)
         newcell[2][2] = c
-        bulk.set_cell(newcell)
+        bulk.set_cell(newcell, scale_atoms=True)
         trajpath = initpath + formula + '_' + xc + '.traj'
         bulk.write(trajpath)
