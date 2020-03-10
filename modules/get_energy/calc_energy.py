@@ -17,7 +17,7 @@ if res:
     xc = res.group(4)
 else:
     res = re.match('(.*)_(.*)_u(.*)_(.*)(.traj)', name)
-    xc = group(4)
+    xc = res.group(4)
     if not res:
         res = re.match('(.*)_(.*)(.traj)', name)
         xc = res.group(2)
