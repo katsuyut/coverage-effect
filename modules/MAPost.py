@@ -34,8 +34,19 @@ def get_maximum_movement(name):
     path = databasepath + name
     traj = Trajectory(path)
 
-    initpos = adjust_possitions(traj[-1].positions)
-    postpos = adjust_possitions(traj[0].positions)
+    initpos = traj[-1].positions
+    postpos = traj[0].positions
+
+    # struct = AseAtomsAdaptor.get_structure(ibareatoms)
+    # initpos = struct.lattice.get_fractional_coords(initpos)
+    # postpos = struct.lattice.get_fractional_coords(postpos)
+
+    initpos = adjust_possitions(initpos)
+    postpos = adjust_possitions(postpos)
+
+    # initpos = struct.lattice.get_cartesian_coords(initpos)
+    # postpos = struct.lattice.get_cartesian_coords(postpos)
+
     diff = abs(np.array(initpos) - np.array(postpos))
     maxdiff = np.max(diff)
 
