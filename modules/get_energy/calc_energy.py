@@ -13,9 +13,14 @@ start = time.time()
 env = 'spacom'
 name = sys.argv[1]
 res = re.match('(.*)_(.*)_u(.*)_(.*)_(.*)_(.*)_n(.*)_(.*)(.traj)', name)
-if not res:
+if res:
+    xc = res.group(4)
+else:
     res = re.match('(.*)_(.*)_u(.*)_(.*)(.traj)', name)
-xc = res.group(4)
+    xc = group(4)
+    if not res:
+        res = re.match('(.*)_(.*)(.traj)', name)
+        xc = res.group(2)
 
 ### Set coefficients ###
 fixlayer = 3
