@@ -325,3 +325,22 @@ def get_equiblium_bulk(mpid, xc='RPBE', env='spacom'):
         bulk.set_cell(newcell, scale_atoms=True)
         trajpath = initpath + formula + '_' + xc + '.traj'
         bulk.write(trajpath)
+
+def custodian_correct_alternative():
+    '''
+    This is alternative function to correct of custodian errorhander.
+    Custodian errorhandler's correct does not make INCAR file with EDIFFG for 
+    some reason and calculations does not converge correctly because of that.
+    '''
+    contents = []
+    with open('INCAR','r') as f:
+        data = 1
+        while data:
+            data = f.readline()
+            if 'IBRION = 2' in data:
+                data = ' IBRION = 1\n'
+            contents.append(data)
+
+    with open('INCAR','w') as f:
+        data = ''.join(contents)
+        f.write(data)

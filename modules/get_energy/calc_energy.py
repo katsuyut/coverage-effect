@@ -54,15 +54,14 @@ else:
 
 
 ### use custodian and if error is found restart ###
-# handlers = [VaspErrorHandler(), UnconvergedErrorHandler()]
-# UnconvergedErrorHandler seems to delete EDIFFG tag and not good for this calculation.
-handlers = [VaspErrorHandler()]
+handlers = [VaspErrorHandler(), UnconvergedErrorHandler()]
 
 flag = False
 for handler in handlers:
     if handler.check():
         flag = True
-        handler.correct()
+        # handler.correct()
+        custodian_correct_alternative()
 
         with open('error_custodian.log', 'a') as f:
             f.write(type(handler).__name__ + ': ')
@@ -72,7 +71,6 @@ for handler in handlers:
 if flag:
     vasptags = Vasp(restart=True)
     atoms = vasptags.get_atoms()
-    atoms.set_calculator(vasptags)
     e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
 
 
