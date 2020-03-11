@@ -331,6 +331,7 @@ def custodian_correct_alternative():
     This is alternative function to correct of custodian errorhander.
     Custodian errorhandler's correct does not make INCAR file with EDIFFG for 
     some reason and calculations does not converge correctly because of that.
+    This only change ibrion = 2 to ibrion = 1.
     '''
     contents = []
     with open('INCAR','r') as f:
