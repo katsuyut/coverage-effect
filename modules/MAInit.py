@@ -444,7 +444,7 @@ class make_adsorbed_surface():
                         chosen = random.choice(index[str(i+1)])
                         index[str(i+1)].remove(chosen)
 
-                        outname = self.surfacename + str('_rno') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
+                        outname = self.surfacename + str('_no') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
                             self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
                         print(outname)
                         outpath = initpath + str(outname)
