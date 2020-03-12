@@ -25,32 +25,40 @@ databasepath = '/home/katsuyut/research/coverage-effect/database/'
 initpath = '/home/katsuyut/research/coverage-effect/init/'
 
 
-def get_maximum_movement(name):
-    '''
-    Using adjust_positions from MAInit to avoid the pbc problem
-    '''
-    name = name.split('.traj')[0]
-    name = name + '_all.traj'
-    path = databasepath + name
-    traj = Trajectory(path)
+# def get_maximum_movement(file):
+#     '''
+#     Using adjust_positions from MAInit to avoid the pbc problem
+#     '''
+#     file = file.split('.traj')[0]
+#     file = file + '_all.traj'
+#     path = databasepath + file
+#     traj = Trajectory(path)
 
-    initpos = traj[-1].positions
-    postpos = traj[0].positions
+#     initpos = traj[-1].positions
+#     postpos = traj[0].positions
 
-    # struct = AseAtomsAdaptor.get_structure(ibareatoms)
-    # initpos = struct.lattice.get_fractional_coords(initpos)
-    # postpos = struct.lattice.get_fractional_coords(postpos)
+#     # struct = AseAtomsAdaptor.get_structure(ibareatoms)
+#     # initpos = struct.lattice.get_fractional_coords(initpos)
+#     # postpos = struct.lattice.get_fractional_coords(postpos)
 
-    initpos = adjust_possitions(initpos)
-    postpos = adjust_possitions(postpos)
+#     initpos = adjust_possitions(initpos)
+#     postpos = adjust_possitions(postpos)
 
-    # initpos = struct.lattice.get_cartesian_coords(initpos)
-    # postpos = struct.lattice.get_cartesian_coords(postpos)
+#     # initpos = struct.lattice.get_cartesian_coords(initpos)
+#     # postpos = struct.lattice.get_cartesian_coords(postpos)
 
-    diff = abs(np.array(initpos) - np.array(postpos))
-    maxdiff = np.max(diff)
+#     diff = abs(np.array(initpos) - np.array(postpos))
+#     maxdiff = np.max(diff)
 
-    return maxdiff
+#     return maxdiff
+
+def get_adsorb_distance(atoms, adsorbate):
+    adseles = get_all_elements(adsorbate)
+    baresurface, adsites = remove_adsorbate(atoms, adseles)
+    posdiff = baresurface.positions - adsites
+    dist = np.linalg.norm(posdiff, axis=1)
+    mindist = min(dist)
+    return mindist
 
 
 def get_adsorbates_position_info(file, flag=0):
@@ -261,7 +269,7 @@ class make_database():
         ibareatoms = init_query(barefile, 'spacom')
 
         adsfile = ads + '_' + xc + '.traj'
-        COatoms = query(adsfile, 'scpacom')
+        adsatoms = query(adsfile, 'scpacom')
 
         ### calc area ###
         x = self.ratoms.cell[0][0]
@@ -277,32 +285,32 @@ class make_database():
         ### get energies ###
         ene = self.ratoms.get_potential_energy()
         bareene = bareatoms.get_potential_energy()
-        COene = COatoms.get_potential_energy()
-        totaladsene = ene - (COene*numads + bareene)
+        adsene = adsatoms.get_potential_energy()
+        totaladsene = ene - (adsene*numads + bareene)
 
         ### get adsorbate position info ###
         igroups, iposlis, rgroups, rposlis = get_adsorbates_position_info(
             self.filename, 0)
 
-        ### get COint info ###
+        ### get adsint info ###
         intfile = self.filename[:-5] + '__.traj'
         initatoms = query(intfile, 'spacom')
-        intene = initatoms.get_potential_energy() - numads*COene
+        intene = initatoms.get_potential_energy() - numads*adsene
 
-        ### get COlength info ###
-        COlengthlis = []
-        for i in range(len(self.ratoms)):
-            if self.ratoms[i].symbol == 'C':
-                Cpos = self.ratoms[i].position
-                Opos = self.ratoms[i+1].position
-                COlengthlis.append(np.linalg.norm(Cpos-Opos))
+        # ### get COlength info ###
+        # COlengthlis = []
+        # for i in range(len(self.ratoms)):
+        #     if self.ratoms[i].symbol == 'C':
+        #         Cpos = self.ratoms[i].position
+        #         Opos = self.ratoms[i+1].position
+        #         COlengthlis.append(np.linalg.norm(Cpos-Opos))
 
         ### judge valid or not ###
         converged = np.max(np.abs(self.ratoms.get_forces())) < 0.03
-        not_moved = get_maximum_movement(self.filename) < 1.5
+        is_adsorbed = get_adsorb_distance(self.ratoms, adsatoms) < 3.0
         kept_sites = igroups == rgroups
         E_not_exceeded = ((totaladsene/tot < 2.0) and (totaladsene/tot > -2.0))
-        if converged and not_moved and kept_sites and E_not_exceeded:
+        if converged and is_adsorbed and kept_sites and E_not_exceeded:
             isvalid = True
         else:
             isvalid = False
@@ -320,7 +328,7 @@ class make_database():
         dic['surfatomnum'] = tot
         dic['E'] = ene
         dic['bareE'] = bareene
-        dic['E_CO'] = COene
+        dic['E_ads'] = adsene
         dic['totaladsE'] = totaladsene
         dic['aveadsE/suratom'] = totaladsene/tot
         dic['aveadsE/ads'] = totaladsene/numads
@@ -333,9 +341,9 @@ class make_database():
         # dic['iposlis'] = [list(item) for item in iposlis]
         dic['rgroups'] = rgroups
         # dic['rposlis'] = [list(item) for item in rposlis]
-        dic['COlengthlis'] = COlengthlis
+        # dic['COlengthlis'] = COlengthlis
         dic['converged'] = 'yes' if converged else 'no'
-        dic['not_moved'] = 'yes' if not_moved else 'no'
+        dic['is_adsorbed'] = 'yes' if is_adsorbed else 'no'
         dic['kept_sites'] = 'yes' if kept_sites else 'no'
         dic['E_not_exceeded'] = 'yes' if E_not_exceeded else 'no'
         dic['minimum_distance'] = None
