@@ -53,12 +53,18 @@ initpath = '/home/katsuyut/research/coverage-effect/init/'
 #     return maxdiff
 
 def get_adsorb_distance(atoms, adsorbate):
+    '''
+    Return maximum of minimum distance between each adsorbates and surface
+    '''
     adseles = get_all_elements(adsorbate)
     baresurface, adsites = remove_adsorbate(atoms, adseles)
-    posdiff = baresurface.positions - adsites
-    dist = np.linalg.norm(posdiff, axis=1)
-    mindist = min(dist)
-    return mindist
+    mindists = []
+    for pos in adsites:
+        posdiff = baresurface.positions - pos
+        dist = np.linalg.norm(posdiff, axis=1)
+        mindists.append(min(dist))
+    maxdist = max(mindists)
+    return maxdist
 
 
 def get_adsorbates_position_info(file, flag=0):
@@ -354,8 +360,6 @@ class make_database():
         self.surfatomnum = tot
         self.aveadsE_suratom = totaladsene/tot
 
-        print(self.filename)
-
         return dic
 
     def add_to_database(self):
@@ -405,6 +409,8 @@ class make_database():
             {'name': self.filename}, {'$set': {'sumE_each_ads': sumE_each_ads}})
 
         if sumE_each_ads:
+            self.make_json()
+
             E_residue_suratom = self.aveadsE_suratom - \
                 ((self.E_int_space + sumE_each_ads) / self.surfatomnum)
             self.collection.find_one_and_update(
@@ -425,6 +431,11 @@ class make_database():
             print('Adsorbate correlatioin is for surface with more than 2 adsorbates.')
             return None
 
+        data = self.collection.find_one({'name': self.filename})
+        if data['minimum_distance']:
+            print('adsorbates correlation already in database.')
+            return None
+
         if maximumdistance == 3:
             repeat = [3, 3, 1]
             rratoms = get_repeated_atoms(self.ratoms, repeat)
@@ -432,13 +443,13 @@ class make_database():
             print('Currently maximum distance is 3.')
 
         b_mat, nads = get_coordination_matrix(rratoms, expression=2)
-        correlation = get_adsorbates_correlation(b_mat, nads, repeat)
+        correlation = get_adsorbates_correlation(b_mat, nads, maximumdistance=3)
         if correlation[0][1] != 0:
             mindist = 2
         elif correlation[1][1] != 0:
             mindist = 3
         else:
-            mindist = None
+            mindist = 'Over 4'
 
         self.collection.find_one_and_update(
             {'name': self.filename}, {'$set': {'minimum_distance': mindist}})
@@ -488,13 +499,13 @@ class dataset_utilizer():
         cond1 = df['ispredictable'] == 'yes'
         cond2 = df['isvalid'] == 'yes'
         dfpred_onlyele = df[cond1 & cond2]
-        dfpred_onlyele = dfpred.reset_index()
+        dfpred_onlyele = dfpred_onlyele.reset_index()
         self.dfpred_onlyele = dfpred_onlyele
 
     def fit_weight_from_specific_element_and_face(self):
         dist3data = self.dfpred[self.dfpred['minimum_distance'] == 3]
         dist2data = self.dfpred[self.dfpred['minimum_distance'] == 2]
-
+        print(len(dist2data))
         X3 = np.array(dist3data['ads_dist3']).reshape(-1, 1)
         y3 = np.array(dist3data['E_residue/suratom'])
         y3_pred, weight3 = self.linearfit(X3, y3)
@@ -509,6 +520,7 @@ class dataset_utilizer():
     def fit_weight_from_specific_element(self):
         dist3data = self.dfpred_onlyele[self.dfpred_onlyele['minimum_distance'] == 3]
         dist2data = self.dfpred_onlyele[self.dfpred_onlyele['minimum_distance'] == 2]
+        print(len(dist2data))
 
         X3 = np.array(dist3data['ads_dist3']).reshape(-1, 1)
         y3 = np.array(dist3data['E_residue/suratom'])
