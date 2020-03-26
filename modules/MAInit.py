@@ -190,7 +190,7 @@ def set_tag(atoms, face):
     poslis = list(set(atoms.get_positions()[:, 2]))
     poslis.sort()
 
-    if face == [1, 0, 0] or face == [1, 1, 0] or face == [1, 1, 1] or face == [1, 1, 1]:
+    if face == [1, 0, 0] or face == [1, 1, 0] or face == [1, 1, 1] or face == [1, 1, 1] or face == [0, 0, 1]:
         for i in range(len(atoms)):
             for j in range(len(poslis)):
                 if atoms[i].position[2] == poslis[j]:

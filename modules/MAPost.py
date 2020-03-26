@@ -60,9 +60,9 @@ def get_adsorb_distance(atoms, adsorbate):
     baresurface, adsites = remove_adsorbate(atoms, adseles)
     mindists = []
     for pos in adsites:
-        posdiff = baresurface.positions - pos
-        dist = np.linalg.norm(posdiff, axis=1)
-        mindists.append(min(dist))
+        posdiff = pos - baresurface.positions
+        minzdist = np.amin(posdiff, axis=0)[2]
+        mindists.append(minzdist)
     maxdist = max(mindists)
     return maxdist
 
@@ -505,7 +505,7 @@ class dataset_utilizer():
     def fit_weight_from_specific_element_and_face(self):
         dist3data = self.dfpred[self.dfpred['minimum_distance'] == 3]
         dist2data = self.dfpred[self.dfpred['minimum_distance'] == 2]
-        print(len(dist2data))
+
         X3 = np.array(dist3data['ads_dist3']).reshape(-1, 1)
         y3 = np.array(dist3data['E_residue/suratom'])
         y3_pred, weight3 = self.linearfit(X3, y3)
@@ -520,7 +520,6 @@ class dataset_utilizer():
     def fit_weight_from_specific_element(self):
         dist3data = self.dfpred_onlyele[self.dfpred_onlyele['minimum_distance'] == 3]
         dist2data = self.dfpred_onlyele[self.dfpred_onlyele['minimum_distance'] == 2]
-        print(len(dist2data))
 
         X3 = np.array(dist3data['ads_dist3']).reshape(-1, 1)
         y3 = np.array(dist3data['E_residue/suratom'])
