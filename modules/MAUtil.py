@@ -80,8 +80,8 @@ def request_mp(mpid):
     formula
     crystal system
     '''
-    mprester = MPRester(api_key=os.environ['MAPIKEY'])
-    data = mprester.get_data(mpid)
+    with MPRester(api_key=os.environ['MAPIKEY']) as m:
+        data = m.get_data(mpid)
     cifdata = data[0]['cif']
     formula = data[0]['pretty_formula']
     path = cifpath + mpid + '_' + formula + '.cif'
