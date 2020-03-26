@@ -61,7 +61,6 @@ for handler in handlers:
     if handler.check():
         flag = True
         handler.correct()
-        # custodian_correct_alternative() # This cahnges ibrion=2 to ibrion=1
 
         with open('error_custodian.log', 'a') as f:
             f.write(type(handler).__name__ + ': ')
@@ -69,7 +68,7 @@ for handler in handlers:
                 f.write(str(handler.errors))
 
 if flag:
-    vasptags = Vasp(restart=True, ediffg=-3.00e-02, ibrion=1)
+    vasptags = Vasp(restart=True, ediffg=-3.00e-02)
     # This ibrion=1 does not work so custodian_alternative is necessary
     atoms = vasptags.get_atoms()
     e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
