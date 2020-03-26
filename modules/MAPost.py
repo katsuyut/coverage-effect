@@ -114,7 +114,7 @@ def __get_coordination_string_mod(nn_info):
     return coordination, coordinated_indexes
 
 
-def get_coordination_matrix(atoms, expression=2):
+def get_coordination_matrix(atoms, expression=1):
     '''
     This function will fingerprint a slab+adsorbate atoms object for you.
     It only  with multiple adsorbates.
@@ -421,7 +421,7 @@ class make_database():
         else:
             print('Could not get Each adsorbates energy.')
 
-    def update_adsorbates_correlation(self, maximumdistance=3):
+    def update_adsorbates_correlation(self, maximumdistance=3, expression=1):
         """
         Assuming more than two adsorbates are on the surface.
         For unitlength = 2 atoms, bridge and hollow sites has interaction with distance = 3
@@ -442,7 +442,7 @@ class make_database():
         else:
             print('Currently maximum distance is 3.')
 
-        b_mat, nads = get_coordination_matrix(rratoms, expression=2)
+        b_mat, nads = get_coordination_matrix(rratoms, expression=1)
         correlation = get_adsorbates_correlation(b_mat, nads, maximumdistance=3)
         if correlation[0][1] != 0:
             mindist = 2
