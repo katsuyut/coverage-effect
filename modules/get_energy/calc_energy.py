@@ -41,7 +41,7 @@ kpoints = get_kpts(atoms)
 
 tagdict = get_default_vasp_tags(xc)
 tagdict['kpts'] = kpoints
-vasptags = set_vasp_tags(tagdict)
+calc = set_vasp_tags(tagdict)
 
 ### Get energy ###
 if query(name, env) != None:
@@ -50,7 +50,7 @@ if query(name, env) != None:
     e_atoms = 'Already in directory'
     sys.exit()
 else:
-    e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
+    e_atoms = get_energy(atoms, name[0:-5], calc, env)
 
 
 ### use custodian and if error is found restart ###
@@ -68,10 +68,11 @@ for handler in handlers:
                 f.write(str(handler.errors))
 
 if flag:
-    vasptags = Vasp(restart=True, ediffg=-3.00e-02)
+    calc = Vasp(restart=True)
+    calc.set(ediffg=-3.00e-02)
     # This ibrion=1 does not work so custodian_alternative is necessary
-    atoms = vasptags.get_atoms()
-    e_atoms = get_energy(atoms, name[0:-5], vasptags, env)
+    atoms = calc.get_atoms()
+    e_atoms = get_energy(atoms, name[0:-5], calc, env)
 
 
 print('{0}, {1}'.format(name, e_atoms))

@@ -421,7 +421,7 @@ class make_database():
         else:
             print('Could not get Each adsorbates energy.')
 
-    def update_adsorbates_correlation(self, maximumdistance=3, expression=1):
+    def update_adsorbates_correlation(self, maximumdistance=3, expression=1, force_update=False):
         """
         Assuming more than two adsorbates are on the surface.
         For unitlength = 2 atoms, bridge and hollow sites has interaction with distance = 3
@@ -432,7 +432,7 @@ class make_database():
             return None
 
         data = self.collection.find_one({'name': self.filename})
-        if data['minimum_distance']:
+        if data['minimum_distance'] and not force_update:
             print('adsorbates correlation already in database.')
             return None
 
