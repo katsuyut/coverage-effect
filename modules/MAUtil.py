@@ -12,12 +12,11 @@ from ase import Atoms, Atom
 from ase.io import read, write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.visualize import view
-import requests
+from pymatgen.ext.matproj import MPRester
 
-databasepath = '/home/katsuyut/research/coverage-effect/database/'
-initpath = '/home/katsuyut/research/coverage-effect/init/'
-cifpath = '/home/katsuyut/research/coverage-effect/cif/'
-
+databasepath = os.environ['DATABASEPATH']
+initpath = os.environ['INITPATH']
+cifpath = os.environ['CIFPATH']
 
 def query(name, env='spacom'):
     path = databasepath + name
@@ -81,11 +80,10 @@ def request_mp(mpid):
     formula
     crystal system
     '''
-    url = 'https://www.materialsproject.org/rest/v2/materials/' + \
-        mpid + '/vasp?API_KEY=' + os.environ['MAPIKEY']
-    response = requests.get(url)
-    cifdata = response.json()['response'][0]['cif']
-    formula = response.json()['response'][0]['pretty_formula']
+    mprester = MPRester(api_key=os.environ['MAPIKEY'])
+    data = mprester.get_data(mpid)
+    cifdata = data[0]['cif']
+    formula = data[0]['pretty_formula']
     path = cifpath + mpid + '_' + formula + '.cif'
     if os.path.exists(path):
         print('Already in cifpath')
@@ -94,13 +92,12 @@ def request_mp(mpid):
             f.write(cifdata)
             print('Added to cifpath')
 
-    crystal_system = response.json(
-    )['response'][0]['spacegroup']['crystal_system']
+    crystal_system = data[0]['spacegroup']['crystal_system']
 
     print('material: {0}'.format(formula))
     print('crystal system: {0}'.format(crystal_system))
 
-    return response.json()['response'][0]
+    return data[0]
 
 
 def assign_group(group, poslis, cell):
