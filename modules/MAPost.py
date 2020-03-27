@@ -21,9 +21,8 @@ from MAInit import *
 from pymongo import MongoClient
 from sklearn.linear_model import LinearRegression
 
-databasepath = '/home/katsuyut/research/coverage-effect/database/'
-initpath = '/home/katsuyut/research/coverage-effect/init/'
-
+databasepath = os.environ['DATABASEPATH']
+initpath = os.environ['INITPATH']
 
 # def get_maximum_movement(file):
 #     '''
@@ -114,7 +113,7 @@ def __get_coordination_string_mod(nn_info):
     return coordination, coordinated_indexes
 
 
-def get_coordination_matrix(atoms, expression=1):
+def get_coordination_matrix(atoms, expression=2):
     '''
     This function will fingerprint a slab+adsorbate atoms object for you.
     It only  with multiple adsorbates.
@@ -164,20 +163,37 @@ def get_coordination_matrix(atoms, expression=1):
             vnn_loose = VoronoiNN(allow_pathological=True, tol=0.2, cutoff=10)
 
             # Find the coordination
+            adscindexes = []
+            cindexes = []
             if atom.symbol == 'Kr':
                 nn_info = vnn.get_nn_info(struct, n=atom.index)
-                coordination, cindexes = __get_coordination_string_mod(nn_info)
+                adscoordination, adscindexes = __get_coordination_string_mod(nn_info)
             else:
                 nn_info = vnn_loose.get_nn_info(struct, n=atom.index)
                 coordination, cindexes = __get_coordination_string_mod(nn_info)
 
             for cindex in cindexes:
                 if expression == 1:
-                    b_mat[atom.index][cindex] = 1
-                    b_mat[cindex][atom.index] = 1
+                    if adscindexes:
+                        b_mat[atom.index][adscindexes] = 1
+                        b_mat[adscindexes][atom.index] = 1
+                    else:
+                        b_mat[atom.index][cindex] = 1
+                        b_mat[cindex][atom.index] = 1
                 elif expression == 2:
-                    b_mat[atom.index][cindex] = 1/len(cindexes)
-                    b_mat[cindex][atom.index] = 1/len(cindexes)
+                    if adscindexes:
+                        b_mat[atom.index][adscindexes] = 1/len(cindexes)
+                        b_mat[adscindexes][atom.index] = 1/len(cindexes)
+                    else:
+                        b_mat[atom.index][cindex] = 1
+                        b_mat[cindex][atom.index] = 1
+                elif expression == 3:
+                    if adscindexes:
+                        b_mat[atom.index][adscindexes] = 1/len(cindexes)
+                        b_mat[adscindexes][atom.index] = 1/len(cindexes)
+                    else:
+                        b_mat[atom.index][cindex] = 1/len(cindexes)
+                        b_mat[cindex][atom.index] = 1/len(cindexes)
 
         return b_mat, nads
 
@@ -421,7 +437,7 @@ class make_database():
         else:
             print('Could not get Each adsorbates energy.')
 
-    def update_adsorbates_correlation(self, maximumdistance=3, expression=1, force_update=False):
+    def update_adsorbates_correlation(self, maximumdistance=3, expression=2, force_update=False):
         """
         Assuming more than two adsorbates are on the surface.
         For unitlength = 2 atoms, bridge and hollow sites has interaction with distance = 3
@@ -442,7 +458,7 @@ class make_database():
         else:
             print('Currently maximum distance is 3.')
 
-        b_mat, nads = get_coordination_matrix(rratoms, expression=1)
+        b_mat, nads = get_coordination_matrix(rratoms, expression)
         correlation = get_adsorbates_correlation(b_mat, nads, maximumdistance=3)
         if correlation[0][1] != 0:
             mindist = 2

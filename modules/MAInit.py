@@ -20,9 +20,9 @@ from MAUtil import *
 from pymongo import MongoClient
 from GASpyfuncs import *
 
-databasepath = '/home/katsuyut/research/coverage-effect/database/'
-initpath = '/home/katsuyut/research/coverage-effect/init/'
-cifpath = '/home/katsuyut/research/coverage-effect/cif/'
+databasepath = os.environ['DATABASEPATH']
+initpath = os.environ['INITPATH']
+mppath = os.environ['MPPATH']
 
 
 def get_all_elements(atoms):

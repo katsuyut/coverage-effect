@@ -7,6 +7,7 @@ import warnings
 import math
 import copy
 import re
+import pickle
 import matplotlib.pyplot as plt
 from ase import Atoms, Atom
 from ase.io import read, write
@@ -16,7 +17,7 @@ from pymatgen.ext.matproj import MPRester
 
 databasepath = os.environ['DATABASEPATH']
 initpath = os.environ['INITPATH']
-cifpath = os.environ['CIFPATH']
+mppath = os.environ['MPPATH']
 
 def query(name, env='spacom'):
     path = databasepath + name
@@ -44,16 +45,32 @@ def init_query(name, env='spacom'):
 
 
 def cif_query(name, env='spacom'):
-    path = cifpath + name
+    path = mppath + name
     try:
         atoms = read(path)
         if env == 'local':
             view(atoms)
         return atoms
     except IOError as e:
-        print('No file named {} in cif'.format(name))
+        print('No file named {} in mp'.format(name))
         return None
 
+def mp_query(name, env='spacom'):
+    path = mppath + name
+    try:
+        with open(path, 'rb') as f:
+            data = pickle.load(f)
+        formula = data['pretty_formula']
+        crystal_system = data['spacegroup']['crystal_system']
+
+        atoms = read(path[:-2]+'.cif')
+        
+        if env == 'local':
+            view(atoms)
+        return atoms, formula, crystal_system
+    except IOError as e:
+        print('No file named {} in mp'.format(name))
+        return None
 
 def get_all_energy():
     files = os.listdir(databasepath)
@@ -75,22 +92,25 @@ def request_mp(mpid):
     Request cif data to mateials project. Cif data is saved in cif folder is not exists.
     You need materials project api_key as MAPIKEY in your environment varible
 
-    return
-    cifdata
-    formula
-    crystal system
+    return response[0]
     '''
     with MPRester(api_key=os.environ['MAPIKEY']) as m:
         data = m.get_data(mpid)
-    cifdata = data[0]['cif']
+
+    # cifdata = data[0]['cif']
     formula = data[0]['pretty_formula']
-    path = cifpath + mpid + '_' + formula + '.cif'
+    path = mppath + mpid + '_' + formula + '.b'
+
     if os.path.exists(path):
-        print('Already in cifpath')
+        print('Already in mppath')
     else:
+        with open(path, 'wb') as f:
+            pickle.dump(data[0] , f)
+    
+        path = mppath + mpid + '_' + formula + '.cif'
         with open(path, 'w') as f:
-            f.write(cifdata)
-            print('Added to cifpath')
+            f.write(data[0]['cif'])
+            print('Added to mppath')
 
     crystal_system = data[0]['spacegroup']['crystal_system']
 

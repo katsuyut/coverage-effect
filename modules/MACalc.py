@@ -21,9 +21,10 @@ from ase.build import fcc100, fcc111, fcc110, fcc211, bcc100, bcc111, bcc110, hc
 from MAUtil import *
 
 
-databasepath = '/home/katsuyut/research/coverage-effect/database/'
-initpath = '/home/katsuyut/research/coverage-effect/init/'
-zvalpath = '/home/katsuyut/research/coverage-effect/zval.txt'
+databasepath = os.environ['DATABASEPATH']
+initpath = os.environ['INITPATH']
+mppath = os.environ['MPPATH']
+zvalpath = os.environ['ZVALPATH']
 
 
 def get_nbands(atoms, f=0.5):
@@ -212,18 +213,16 @@ def get_energy(atoms, name, vasptags, env):
     return e_atoms
 
 
-def get_equiblium_bulk(mpid, xc='RPBE', env='spacom'):
+def get_equiblium_bulk(mpname, xc='RPBE', env='spacom'):
     '''
     Now can only deal with cubic, hexagonal and trigonal systems
     OK:cubic trigonal tetragonal (This does not optimize angle for trigonal)
     NG:others (orthohombic hexagona triclinic monoclinic)
     '''
-    response = request_mp(mpid)
-    formula = response['pretty_formula']
-    crystal_system = response['spacegroup']['crystal_system']
+    path = mppath + mpname
+    bulk, formula, crystal_system = mp_query(path)
     eps = 0.03
 
-    bulk = cif_query(mpid+'_'+formula+'.cif')
     cell = bulk.get_cell()
     v = bulk.get_volume()
 
