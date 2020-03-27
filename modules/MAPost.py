@@ -167,38 +167,26 @@ def get_coordination_matrix(atoms, expression=2):
             cindexes = []
             if atom.symbol == 'Kr':
                 nn_info = vnn.get_nn_info(struct, n=atom.index)
-                adscoordination, adscindexes = __get_coordination_string_mod(nn_info)
+                coordination, cindexes = __get_coordination_string_mod(nn_info)
+                if expression == 1:
+                    for cindex in cindexes:
+                        b_mat[atom.index][cindex] = 1
+                        b_mat[cindex][atom.index] = 1
+                elif expression == 2 or expression == 3:
+                    for cindex in cindexes:
+                        b_mat[atom.index][cindex] = 1/len(cindexes)
+                        b_mat[cindex][atom.index] = 1/len(cindexes)
             else:
                 nn_info = vnn_loose.get_nn_info(struct, n=atom.index)
                 coordination, cindexes = __get_coordination_string_mod(nn_info)
-
-                if expression == 1:
-                    if adscindexes:
-                        for adscindex in adscindexes:
-                            b_mat[atom.index][adscindex] = 1
-                            b_mat[adscindex][atom.index] = 1
-                    else:
-                        for cindex in cindexes:
-                            b_mat[atom.index][cindex] = 1
-                            b_mat[cindex][atom.index] = 1
-                elif expression == 2:
-                    if adscindexes:
-                        for adscindex in adscindexes:
-                            b_mat[atom.index][adscindex] = 1/len(cindexes)
-                            b_mat[adscindex][atom.index] = 1/len(cindexes)
-                    else:
-                        for cindex in cindexes:
-                            b_mat[atom.index][cindex] = 1
-                            b_mat[cindex][atom.index] = 1
+                if expression == 1 or expression == 2:
+                    for cindex in cindexes:
+                        b_mat[atom.index][cindex] = 1
+                        b_mat[cindex][atom.index] = 1
                 elif expression == 3:
-                    if adscindexes:
-                        for adscindex in adscindexes:
-                            b_mat[atom.index][adscindex] = 1/len(cindexes)
-                            b_mat[adscindex][atom.index] = 1/len(cindexes)
-                    else:
-                        for cindex in cindexes:
-                            b_mat[atom.index][cindex] = 1/len(cindexes)
-                            b_mat[cindex][atom.index] = 1/len(cindexes)
+                    for cindex in cindexes:
+                        b_mat[atom.index][cindex] = 1/len(cindexes)
+                        b_mat[cindex][atom.index] = 1/len(cindexes)
 
         return b_mat, nads
 

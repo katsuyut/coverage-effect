@@ -1,0 +1,2 @@
+Cu_111_u2_RPBE_no100_CO_n1_d8.traj, None
+0.00034411350886027017 min
