@@ -25,8 +25,9 @@ export PATH="/home/zulissi/software/vasp/5.4.4_impi_cuda_patch0518_intel0818/bin
 export VASP_SCRIPT=./run_vasp.py
 export VASP_PP_PATH=/home/katsuyut/5.4.4
 
-echo "import os" > run_vasp.py
-echo "exitcode = os.system('mpirun -np 16 vasp_std')" >> run_vasp.py
+
+# echo "import os" > run_vasp.py
+# echo "exitcode = os.system('mpirun -np 16 vasp_std')" >> run_vasp.py
 
 echo $PATH
 echo $TMPDIR
