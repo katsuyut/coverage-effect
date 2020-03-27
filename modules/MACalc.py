@@ -185,12 +185,8 @@ def get_energy(atoms, name, vasptags, env):
     elif env == 'spacom':
         atoms.set_calculator(vasptags)
 
-    try:
-        e_atoms = atoms.get_potential_energy()
-        atoms.write(trajpath)
-    except:
-        print('Error while calculating {0} energy!'.format(name))
-        return None
+    e_atoms = atoms.get_potential_energy()
+    atoms.write(trajpath)
 
     if env == 'spacom':
         atomslist = []
