@@ -172,28 +172,33 @@ def get_coordination_matrix(atoms, expression=2):
                 nn_info = vnn_loose.get_nn_info(struct, n=atom.index)
                 coordination, cindexes = __get_coordination_string_mod(nn_info)
 
-            for cindex in cindexes:
                 if expression == 1:
                     if adscindexes:
-                        b_mat[atom.index][adscindexes] = 1
-                        b_mat[adscindexes][atom.index] = 1
+                        for adscindex in adscindexes:
+                            b_mat[atom.index][adscindex] = 1
+                            b_mat[adscindex][atom.index] = 1
                     else:
-                        b_mat[atom.index][cindex] = 1
-                        b_mat[cindex][atom.index] = 1
+                        for cindex in cindexes:
+                            b_mat[atom.index][cindex] = 1
+                            b_mat[cindex][atom.index] = 1
                 elif expression == 2:
                     if adscindexes:
-                        b_mat[atom.index][adscindexes] = 1/len(cindexes)
-                        b_mat[adscindexes][atom.index] = 1/len(cindexes)
+                        for adscindex in adscindexes:
+                            b_mat[atom.index][adscindex] = 1/len(cindexes)
+                            b_mat[adscindex][atom.index] = 1/len(cindexes)
                     else:
-                        b_mat[atom.index][cindex] = 1
-                        b_mat[cindex][atom.index] = 1
+                        for cindex in cindexes:
+                            b_mat[atom.index][cindex] = 1
+                            b_mat[cindex][atom.index] = 1
                 elif expression == 3:
                     if adscindexes:
-                        b_mat[atom.index][adscindexes] = 1/len(cindexes)
-                        b_mat[adscindexes][atom.index] = 1/len(cindexes)
+                        for adscindex in adscindexes:
+                            b_mat[atom.index][adscindex] = 1/len(cindexes)
+                            b_mat[adscindex][atom.index] = 1/len(cindexes)
                     else:
-                        b_mat[atom.index][cindex] = 1/len(cindexes)
-                        b_mat[cindex][atom.index] = 1/len(cindexes)
+                        for cindex in cindexes:
+                            b_mat[atom.index][cindex] = 1/len(cindexes)
+                            b_mat[cindex][atom.index] = 1/len(cindexes)
 
         return b_mat, nads
 
@@ -339,7 +344,7 @@ class make_database():
 
         dic['name'] = self.filename
         dic['isvalid'] = 'yes' if isvalid else 'no'
-        dic['ispredictable'] = 'No'
+        dic['ispredictable'] = 'no'
         dic['element'] = ele
         dic['face'] = face
         dic['unitlength'] = unit
