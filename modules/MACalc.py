@@ -219,8 +219,7 @@ def get_equiblium_bulk(mpname, xc='RPBE', env='spacom'):
     OK:cubic trigonal tetragonal (This does not optimize angle for trigonal)
     NG:others (orthohombic hexagona triclinic monoclinic)
     '''
-    path = mppath + mpname
-    bulk, formula, crystal_system = mp_query(path)
+    bulk, formula, crystal_system = mp_query(mpname)
     eps = 0.03
 
     cell = bulk.get_cell()
