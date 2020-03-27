@@ -14,7 +14,7 @@ for file in read_data:
     com1 = 'mkdir ' + name[0:-5]
     os.system(com1)
 
-    com2 = 'cp calc_energy.py calc_inter_energy.py submitjob.pbs submitjob_int.pbs vdw_kernel.bindat run_vasp.py' + \
+    com2 = 'cp calc_energy.py calc_inter_energy.py submitjob.pbs submitjob_int.pbs vdw_kernel.bindat run_vasp.py ' + \
         name[0:-5] + '/'
     os.system(com2)
 
