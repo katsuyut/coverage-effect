@@ -250,7 +250,7 @@ class make_database():
         (n + number of adsorbate)_(d + minimum distance of each adsorbates).traj
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, collectionname):
         self.filename = filename
         res = re.match(
             '(.*)_(.*)_u(.*)_(.*)_(.*)_(.*)_n(.*)_(.*)(.traj)', filename)
@@ -262,7 +262,7 @@ class make_database():
         self.ratoms = query(filename)
         client = MongoClient('localhost', 27017)
         db = client.adsE_database
-        self.collection = db.adsE_collection
+        self.collection = db[collectionname]
         print('-----------------------------------------------------------')
         print(filename)
 
@@ -486,10 +486,10 @@ class make_database():
 
 
 class dataset_utilizer():
-    def __init__(self, element, face):
+    def __init__(self, collectionname, element, face):
         client = MongoClient('localhost', 27017)
         db = client.adsE_database
-        collection = db.adsE_collection
+        collection = db[collectionname]
 
         dic = {'element': element, 'face': face}
         dfall = pd.DataFrame(list(collection.find(dic)))

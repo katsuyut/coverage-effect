@@ -219,7 +219,7 @@ class make_adsorbed_surface():
         self.initatoms = init_query(surfacename + '.traj', env='spacom')
         self.adsorbate = query(adsorbatename+'.traj', env='spacom')
 
-    def make_surface(self, maxmole, mindist, get_only_stable=False):
+    def make_surface(self, maxmole, mindist, collectionname=None, get_only_stable=False):
         self.maxmole = maxmole
         self.get_only_stable = get_only_stable
         adseles = get_all_elements(self.adsorbate)
@@ -233,7 +233,7 @@ class make_adsorbed_surface():
         self.group = group
 
         if get_only_stable:
-            eliminatedgroup = self.choose_eliminated_groups()
+            eliminatedgroup = self.choose_eliminated_groups(collectionname)
             self.eliminatedgroup = eliminatedgroup
 
             # eliminate sites candidates
@@ -264,10 +264,10 @@ class make_adsorbed_surface():
         self.numdict = numdict
         self.molenum = molenum
 
-    def choose_eliminated_groups(self):
+    def choose_eliminated_groups(self, collectionname):
         client = MongoClient('localhost', 27017)
         db = client.adsE_database
-        collection = db.adsE_collection
+        collection = db[collectionname]
 
         res = re.match('(.*)_(.*)_u(.*)_(.*)', self.surfacename)
         ele = res.group(1)

@@ -6,8 +6,8 @@
 #SBATCH --partition=cpu
 #SBATCH --account=ulissi
 #SBATCH --job-name=vasp
-#SBATCH --output=vasp.out
-#SBATCH --error=std_err.txt
+#SBATCH --output=vasp_slurm.out
+#SBATCH --error=std_err_slurm.txt
 #SBATCH --mem-per-cpu=2G
 #SBATCH --exclude=c021,f006
 
