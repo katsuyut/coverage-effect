@@ -263,6 +263,7 @@ class make_database():
         client = MongoClient('localhost', 27017)
         db = client.adsE_database
         self.collection = db[collectionname]
+        self.makejsonflag = False
         print('-----------------------------------------------------------')
         print(filename)
 
@@ -368,6 +369,7 @@ class make_database():
         self.E_int_space = intene
         self.surfatomnum = tot
         self.aveadsE_suratom = totaladsene/tot
+        self.makejsonflag = True
 
         return dic
 
@@ -390,7 +392,7 @@ class make_database():
         E_each_ads = []  # adsE + slabE
 
         for site in data['rgroups']:
-            refdata = self.collection.find_one({'element': data['element'], 'face': data['face'], 'unitlength': 2,
+            refdata = self.collection.find_one({'element': data['element'], 'face': data['face'], 'numberofads': 1,
                                                 'xc': data['xc'], 'adsorbate': data['adsorbate'],
                                                 'rgroups': [site]})
             if refdata == None:
@@ -418,7 +420,8 @@ class make_database():
             {'name': self.filename}, {'$set': {'sumE_each_ads': sumE_each_ads}})
 
         if sumE_each_ads:
-            self.make_json()
+            if not self.makejsonflag:
+                self.make_json()
 
             E_residue_suratom = self.aveadsE_suratom - \
                 ((self.E_int_space + sumE_each_ads) / self.surfatomnum)
@@ -433,12 +436,12 @@ class make_database():
     def update_adsorbates_correlation(self, maximumdistance=3, expression=2, force_update=False):
         """
         Assuming more than two adsorbates are on the surface.
-        For unitlength = 2 atoms, bridge and hollow sites has interaction with distance = 3
-        even only with one adsorbates, but ignoreing that fact in this function.
+          For unitlength = 2 atoms, bridge and hollow sites has interaction with distance = 3
+          even only with one adsorbates, but ignoreing that fact in this function.
         """
-        if self.numads <= 1:
-            print('Adsorbate correlatioin is for surface with more than 2 adsorbates.')
-            return None
+        # if self.numads <= 1:
+        #     print('Adsorbate correlatioin is for surface with more than 2 adsorbates.')
+        #     return None
 
         data = self.collection.find_one({'name': self.filename})
         if data['minimum_distance'] and not force_update:
@@ -496,9 +499,9 @@ class dataset_utilizer():
         cond1 = dfall['isvalid'] == 'yes'
         cond2 = dfall['ispredictable'] == 'yes'
         df = dfall[cond1]
-        df = df.reset_index()
+        df = df.reset_index(drop=True)
         dfpred = dfall[cond1 & cond2]
-        dfpred = dfpred.reset_index()
+        dfpred = dfpred.reset_index(drop=True)
         self.dfall = dfall
         self.df = df
         self.dfpred = dfpred
@@ -508,7 +511,7 @@ class dataset_utilizer():
         cond1 = df['ispredictable'] == 'yes'
         cond2 = df['isvalid'] == 'yes'
         dfpred_onlyele = df[cond1 & cond2]
-        dfpred_onlyele = dfpred_onlyele.reset_index()
+        dfpred_onlyele = dfpred_onlyele.reset_index(drop=True)
         self.dfpred_onlyele = dfpred_onlyele
 
     def fit_weight_from_specific_element_and_face(self):
