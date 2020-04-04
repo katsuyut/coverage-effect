@@ -437,7 +437,13 @@ class make_adsorbed_surface():
                         break
         else:
             # designated maxmole might not be acheived
-            maxmole = int(max(self.numdict.keys()))
+            if self.numdict.keys():
+                maxmole = int(max(self.numdict.keys()))
+            else:
+                print('No stable adsorption site.')
+                return None
+
+
             for i in range(1, maxmole):
                 for j in range(maximum):
                     if index[str(i+1)]:
