@@ -84,7 +84,7 @@ def get_default_vasp_tags(xc='RPBE'):
         'pp': 'PBE',
         'ncore': 4,
         'encut': 350,
-        'nsw': 200,
+        'nsw': 100,
         # 'kpts' : None,
         'ibrion': 2,  # 2 is good for calcs with bad initial positions
         'isif': 0,
