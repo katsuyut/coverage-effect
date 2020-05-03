@@ -20,6 +20,7 @@ from MAUtil import *
 from MAInit import *
 from pymongo import MongoClient
 from sklearn.linear_model import LinearRegression
+import statsmodels.api as sm
 
 databasepath = os.environ['DATABASEPATH']
 initpath = os.environ['INITPATH']
@@ -246,7 +247,7 @@ class make_database():
     Create json(python dictionary) object for adsorbate adsorbed surface
     This requires specific filename convention
     ex) Pd_111_u2_RPBE_no015_CO_n1_d9.traj
-        (element)_(face)_(u + unitlength)_(xc used in vasp)_(number)_(adsorbate)_
+        (formula)_(face)_(u + unitlength)_(xc used in vasp)_(number)_(adsorbate)_
         (n + number of adsorbate)_(d + minimum distance of each adsorbates).traj
     """
 
@@ -272,7 +273,7 @@ class make_database():
 
         res = re.match(
             '(.*)_(.*)_u(.*)_(.*)_(.*)_(.*)_n(.*)_(.*)(.traj)', self.filename)
-        ele = res.group(1)
+        formula = res.group(1)
         face = res.group(2)
         unit = int(res.group(3))
         xc = res.group(4)
@@ -334,7 +335,7 @@ class make_database():
         dic['name'] = self.filename
         dic['isvalid'] = 'yes' if isvalid else 'no'
         dic['ispredictable'] = 'no'
-        dic['element'] = ele
+        dic['formula'] = formula
         dic['face'] = face
         dic['unitlength'] = unit
         dic['xc'] = xc
@@ -392,7 +393,7 @@ class make_database():
         E_each_ads = []  # adsE + slabE
 
         for site in data['rgroups']:
-            refdata = self.collection.find_one({'element': data['element'], 'face': data['face'], 'numberofads': 1,
+            refdata = self.collection.find_one({'formula': data['formula'], 'face': data['face'], 'numberofads': 1,
                                                 'xc': data['xc'], 'adsorbate': data['adsorbate'],
                                                 'rgroups': [site]})
             if refdata == None:
@@ -489,64 +490,64 @@ class make_database():
 
 
 class dataset_utilizer():
-    def __init__(self, collectionname, element, face):
+    def __init__(self, collectionname, formula, face):
         client = MongoClient('localhost', 27017)
         db = client.adsE_database
         collection = db[collectionname]
 
-        dic = {'element': element, 'face': face}
+        dic = {'formula': formula, 'face': face}
         dfall = pd.DataFrame(list(collection.find(dic)))
         cond1 = dfall['isvalid'] == 'yes'
         cond2 = dfall['ispredictable'] == 'yes'
+        cond3 = dfall['coverage'] <= 1.0
+        cond4 = dfall['aveadsE/suratom'] >= -2.0
         df = dfall[cond1]
         df = df.reset_index(drop=True)
-        dfpred = dfall[cond1 & cond2]
+        dfpred = dfall[cond1 & cond2 & cond3 & cond4] # cond3 is really necessary?
         dfpred = dfpred.reset_index(drop=True)
         self.dfall = dfall
         self.df = df
         self.dfpred = dfpred
 
-        dic = {'element': element}
+        dic = {'formula': formula}
         df = pd.DataFrame(list(collection.find(dic)))
         cond1 = df['ispredictable'] == 'yes'
         cond2 = df['isvalid'] == 'yes'
-        dfpred_onlyele = df[cond1 & cond2]
-        dfpred_onlyele = dfpred_onlyele.reset_index(drop=True)
-        self.dfpred_onlyele = dfpred_onlyele
+        dfpred_onlyformula = df[cond1 & cond2 & cond3 & cond4]
+        dfpred_onlyformula = dfpred_onlyformula.reset_index(drop=True)
+        self.dfpred_onlyformula = dfpred_onlyformula
 
-    def fit_weight_from_specific_element_and_face(self):
-        dist3data = self.dfpred[self.dfpred['minimum_distance'] == 3]
-        dist2data = self.dfpred[self.dfpred['minimum_distance'] == 2]
+    def fit_weight_from_specific_formula_and_face(self):
+        cols = ['ads_dist2', 'ads_dist3']
+        data = self.dfpred[cols]
+        weight2 = 0
+        weight3 = 0
 
-        X3 = np.array(dist3data['ads_dist3']).reshape(-1, 1)
-        y3 = np.array(dist3data['E_residue/suratom'])
-        y3_pred, weight3 = self.linearfit(X3, y3)
+        X = np.array(data).reshape(-1, 2)
+        y = np.array(self.dfpred['E_residue/suratom'])
+        # y_pred, weight2, weight3 = self.linearfit(X, y)
+        model = sm.OLS(y,X)
+        results = model.fit()
 
-        X2 = np.array(dist2data['ads_dist2']).reshape(-1, 1)
-        y2 = np.array(dist2data['E_residue/suratom']) - \
-            weight3 * dist2data['ads_dist3']
-        y2_pred, weight2 = self.linearfit(X2, y2)
+        return results.params, results.bse
 
-        return np.array([weight2, weight3])
+    def fit_weight_from_specific_formula(self):
+        cols = ['ads_dist2', 'ads_dist3']
+        data = self.dfpred_onlyformula[cols]
+        weight2 = 0
+        weight3 = 0
 
-    def fit_weight_from_specific_element(self):
-        dist3data = self.dfpred_onlyele[self.dfpred_onlyele['minimum_distance'] == 3]
-        dist2data = self.dfpred_onlyele[self.dfpred_onlyele['minimum_distance'] == 2]
+        X = np.array(data).reshape(-1, 2)
+        y = np.array(self.dfpred_onlyformula['E_residue/suratom'])
+        # y_pred, weight2, weight3 = self.linearfit(X, y)
+        model = sm.OLS(y,X)
+        results = model.fit()
 
-        X3 = np.array(dist3data['ads_dist3']).reshape(-1, 1)
-        y3 = np.array(dist3data['E_residue/suratom'])
-        y3_pred, weight3 = self.linearfit(X3, y3)
-
-        X2 = np.array(dist2data['ads_dist2']).reshape(-1, 1)
-        y2 = np.array(dist2data['E_residue/suratom']) - \
-            weight3 * dist2data['ads_dist3']
-        y2_pred, weight2 = self.linearfit(X2, y2)
-
-        return np.array([weight2, weight3])
+        return results.params, results.bse
 
     def linearfit(self, X, y):
         Lin = LinearRegression(fit_intercept=False)
         Lin.fit(X, y)
         y_pred = Lin.predict(X)
-        slope = Lin.coef_
-        return y_pred, slope
+        slope2, slope3 = Lin.coef_
+        return y_pred, slope2, slope3

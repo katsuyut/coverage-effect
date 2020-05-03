@@ -8,7 +8,7 @@ import math
 import copy
 import time
 from ase import Atoms, Atom
-from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate
+from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate, surface
 from ase.constraints import FixAtoms
 from ase.io import read, write
 from ase.calculators.emt import EMT
@@ -229,12 +229,13 @@ class make_adsorbed_surface():
             get_adsorption_sites(baresurface, False)['all'])
 
         allbareadsites = np.array(bareadsites['all'])
+
         group = create_site_group(baresurface)
         self.group = group
 
         if get_only_stable:
-            eliminatedgroup = self.choose_eliminated_groups(collectionname)
-            self.eliminatedgroup = eliminatedgroup
+            validgroup = self.choose_valid_groups(collectionname)
+            self.validgroup = validgroup
 
             # eliminate sites candidates
             cell = baresurface.cell
@@ -243,9 +244,9 @@ class make_adsorbed_surface():
 
             index = []
             for i in range(len(baregroups)):
-                if [baregroups[i]] in eliminatedgroup:
+                if [baregroups[i]] in validgroup:
                     index.append(i)
-            allbareadsites = np.delete(allbareadsites, index, axis=0)
+            allbareadsites = allbareadsites[index]
 
         ind = []
         for i in range(len(allbareadsites)):
@@ -264,7 +265,7 @@ class make_adsorbed_surface():
         self.numdict = numdict
         self.molenum = molenum
 
-    def choose_eliminated_groups(self, collectionname):
+    def choose_valid_groups(self, collectionname):
         client = MongoClient('localhost', 27017)
         db = client.adsE_database
         collection = db[collectionname]
@@ -280,13 +281,13 @@ class make_adsorbed_surface():
         refdata = list(collection.find({'element': ele, 'face': face, 'unitlength': 2,
                                         'xc': xc, 'adsorbate': adsorbate, 'numberofads': 1}))
 
-        # choose groups to be eliminated from site candidate
-        eliminatedgroup = []
+        # choose valid groups from site candidate
+        validgroup = []
         for data in refdata:
-            if data['isvalid'] == 'no':
-                eliminatedgroup.append(data['igroups'])
+            if data['isvalid'] == 'yes':
+                validgroup.append(data['igroups'])
 
-        return eliminatedgroup
+        return validgroup
 
     def get_unique_surface(self, atoms, bareatoms, adsites, maxmole, mindist, initadsites, group, adsorbate):
         '''
@@ -378,13 +379,13 @@ class make_adsorbed_surface():
         redadsites = [list(i) for i in redadsites_]
 
         if self.get_only_stable:
-            # eliminate sites candidates
+            # choose sites candidates
             redadsitesgroups = assign_group(self.group, redadsites_, self.cell)
             index = []
             for i in range(len(redadsitesgroups)):
-                if [redadsitesgroups[i]] in self.eliminatedgroup:
+                if [redadsitesgroups[i]] in self.validgroup:
                     index.append(i)
-            redadsites_ = np.delete(redadsites_, index, axis=0)
+            redadsites_ = np.array(redadsites_)[index]
             redadsites = [list(i) for i in redadsites_]
 
         initmol = len(initadsites)
