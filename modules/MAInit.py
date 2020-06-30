@@ -8,7 +8,7 @@ import math
 import copy
 import time
 from ase import Atoms, Atom
-from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate, surface
+from ase.build import fcc100, fcc111, fcc110, bcc100, bcc111, bcc110, add_adsorbate, rotate
 from ase.constraints import FixAtoms
 from ase.io import read, write
 from ase.calculators.emt import EMT
@@ -47,7 +47,7 @@ def remove_adsorbate(atoms, molecule):
                 break
     return cpatoms, np.array(poslis)
 
-
+# the group assignment can be different for the surface with different creation method
 def create_site_group(baresurface):
     redbareadsites = get_adsorption_sites(baresurface, True)
     redbareadsites = np.array(redbareadsites['all'])
@@ -69,9 +69,19 @@ def create_site_group(baresurface):
             if check_if_same(baresurface, np.array([allbareadsites[i]]), np.array([np.array([redbareadsites[j]])])):
                 group[j].append(list(allbareadsites[i]))
                 break
-
+    
+    # below is necessary for group assignment for different unit size surface
+    # with very different ways of creating surface, the group assignment can be very different
+    
+    # sort in-group order
+    for i in range(len(group)):
+        item = sorted(group[i] ,key=lambda x: x[0])
+        item = sorted(item ,key=lambda x: x[1])
+        group[i] = item
+    # sort group
+    group = sorted(group, key=lambda x: x[0][1])
+    
     return group
-
 
 def get_adsorption_sites(atoms, symm_reduce):
     '''
@@ -114,6 +124,7 @@ def check_if_same(baresurface, sites, sitesset):
 
         for used in modfrsitesset:
             used = [list(item) for item in used]
+            # print(sorted(modfropsites), sorted(used))
             if len(modfropsites) == len(used):
                 if np.allclose(sorted(modfropsites), sorted(used), atol=0.01):
                     # print('Symmetrically same structure found!')

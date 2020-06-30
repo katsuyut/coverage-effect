@@ -510,10 +510,12 @@ class dataset_utilizer():
         self.dfpred = dfpred
 
         dic = {'formula': formula}
-        df = pd.DataFrame(list(collection.find(dic)))
-        cond1 = df['ispredictable'] == 'yes'
-        cond2 = df['isvalid'] == 'yes'
-        dfpred_onlyformula = df[cond1 & cond2 & cond3 & cond4]
+        df2 = pd.DataFrame(list(collection.find(dic)))
+        cond1 = df2['isvalid'] == 'yes'
+        cond2 = df2['ispredictable'] == 'yes'
+        cond3 = df2['coverage'] <= 1.0
+        cond4 = df2['aveadsE/suratom'] >= -2.0
+        dfpred_onlyformula = df2[cond1 & cond2 & cond3 & cond4]
         dfpred_onlyformula = dfpred_onlyformula.reset_index(drop=True)
         self.dfpred_onlyformula = dfpred_onlyformula
 
