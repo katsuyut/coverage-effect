@@ -51,9 +51,11 @@ def remove_adsorbate(atoms, molecule):
 def create_site_group(baresurface):
     redbareadsites = get_adsorption_sites(baresurface, True)
     redbareadsites = np.array(redbareadsites['all'])
+    redbareadsites = np.round(redbareadsites, 4)
 
     allbareadsites = get_adsorption_sites(baresurface, False)
     allbareadsites = np.array(allbareadsites['all'])
+    allbareadsites = np.round(allbareadsites, 4)
 
     group = [[list(item)] for item in redbareadsites]
 
@@ -289,7 +291,7 @@ class make_adsorbed_surface():
         res = re.match('(.*)_(.*)', self.adsorbatename)
         adsorbate = res.group(1)
 
-        refdata = list(collection.find({'element': ele, 'face': face, 'unitlength': 2,
+        refdata = list(collection.find({'formula': ele, 'face': face, 'unitlength': 2,
                                         'xc': xc, 'adsorbate': adsorbate, 'numberofads': 1}))
 
         # choose valid groups from site candidate
@@ -353,7 +355,7 @@ class make_adsorbed_surface():
                 tmpused.append(nextused)
                 molenum.append(molnum)
 
-                # print('{0}-------{1}-------'.format(molnum, nextatoms.symbols)) # keep it for debugging
+                print('{0}-------{1}-------'.format(molnum, nextatoms.symbols)) # keep it for debugging
                 if molnum == initmol+1:
                     print('progress: {}/{}, {:.2f} min'.format(count,
                                                                len(rsites), (time.time() - start)/60))
@@ -440,7 +442,7 @@ class make_adsorbed_surface():
                         index[str(i+1)].remove(chosen)
 
                         outname = self.surfacename + str('_no') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
-                            self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
+                            self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[chosen]/0.5)-3)) + '.traj'
                         print(outname)
                         outpath = initpath + str(outname)
                         self.allatoms[chosen].write(outpath)
@@ -463,11 +465,151 @@ class make_adsorbed_surface():
                         index[str(i+1)].remove(chosen)
 
                         outname = self.surfacename + str('_no') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
-                            self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[i]/0.5)-3)) + '.traj'
+                            self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[chosen]/0.5)-3)) + '.traj'
                         print(outname)
                         outpath = initpath + str(outname)
                         self.allatoms[chosen].write(outpath)
 
                     else:
                         break
+            self.numbaredadsites
+
+    def make_random_surface(self, molnum, mindist, collectionname=None, get_only_stable=True, nconfig=5):
+        self.get_only_stable = get_only_stable
+        height = 1.85
+        adseles = get_all_elements(self.adsorbate)
+        baresurface, initadsites = remove_adsorbate(self.initatoms, adseles)
+        bareadsites = get_adsorption_sites(baresurface, False)
+        self.numbaredadsites = len(
+            get_adsorption_sites(baresurface, False)['all'])
+
+        allbareadsites = np.array(bareadsites['all'])
+
+        group = create_site_group(baresurface)
+
+        if get_only_stable:
+            validgroup = self.choose_valid_groups(collectionname)
+
+            # eliminate sites candidates
+            cell = baresurface.cell
+            baregroups = assign_group(group, allbareadsites, cell)
+
+            index = []
+            for i in range(len(baregroups)):
+                if [baregroups[i]] in validgroup:
+                    index.append(i)
+            allbareadsites = allbareadsites[index]
+
+        ind = []
+        for i in range(len(allbareadsites)):
+            for j in range(len(initadsites)):
+                if np.allclose(allbareadsites[i][:2], initadsites[j][:2]):
+                    ind.append(i)
+
+        allatoms = []
+        allinuse = []
+        molenum = []
+
+        for i in range(nconfig):
+            molenum.append(molnum)
+            adsites = np.delete(allbareadsites, ind, 0)
+            inuse = allbareadsites[ind]
+            print('%d th config' % i)
+            atoms = copy.deepcopy(self.initatoms)
+            trial = 1
+
+            while len(inuse) < molnum:
+                if len(adsites)==0:
+                    print('trial %d creation failed' % trial)
+                    # reset and restart
+                    trial += 1
+                    adsites = np.delete(allbareadsites, ind, 0)
+                    inuse = allbareadsites[ind]
+
+                chosenindex = np.random.randint(0, len(adsites))
+                chosenone = adsites[chosenindex]
+                adsites = np.delete(adsites, chosenindex, 0)
+                if len(inuse)==0:
+                    inuse = np.append(inuse, np.array([chosenone]), axis=0)
+                else:
+                    tmpuse = np.append(inuse, np.array([chosenone]), axis=0)
+                    if get_minimum_distance(tmpuse, baresurface.cell) > mindist: # judge if chosen position has enough distance
+                        # add to inuse
+                        inuse = np.append(inuse, np.array([chosenone]), axis=0)
+
+            for pos in inuse:
+                add_adsorbate(atoms, self.adsorbate, height, pos[:2])
+            
+            allatoms.append(atoms)
+            allinuse.append(inuse)
+        
+        mindistlis = get_minimum_distance_list(allinuse, baresurface.cell)
+        
+        numdict = {}
+        for site in allinuse:
+            if str(len(site)) not in numdict.keys():
+                numdict[str(len(site))] = 1
+            else:
+                numdict[str(len(site))] += 1
+        
+        self.allatoms = allatoms
+        self.mindistlis = mindistlis
+        self.numdict = numdict
+        self.molenum = molenum
+        
+        return allatoms, mindistlis, numdict, molenum
+    
+    def write_random_trajectory(self, maximum=15):
+        """
+        This is for writing trajectory files in init folder.
+        Maximum number of configurations is set. This is for each number of adsorbates.
+        """
+        # get index of configurations for each moleculer numbers
+        index = {}
+        for i in range(len(self.molenum)):
+            if str(self.molenum[i]) in index.keys():
+                index[str(self.molenum[i])].append(i)
+            else:
+                index[str(self.molenum[i])] = [i]
+
+        if not self.get_only_stable:
+            # designated maxmole might not be acheived
+            maxmole = int(max(self.numdict.keys()))
+            i = maxmole - 1
+            for j in range(maximum):
+                if index[str(i+1)]:
+                    chosen = random.choice(index[str(i+1)])
+                    index[str(i+1)].remove(chosen)
+
+                    outname = self.surfacename + str('_no') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
+                        self.molenum[i]) + str('_d') + str(int(np.ceil(self.mindistlis[chosen]/0.5)-3)) + '.traj'
+                    print(outname)
+                    outpath = initpath + str(outname)
+                    self.allatoms[chosen].write(outpath)
+
+                else:
+                    break
+        else:
+            # designated maxmole might not be acheived
+            if self.numdict.keys():
+                maxmole = int(max(self.numdict.keys()))
+            else:
+                print('No stable adsorption site.')
+                return None
+
+
+            i = maxmole - 1
+            for j in range(maximum):
+                if index[str(i+1)]:
+                    chosen = random.choice(index[str(i+1)])
+                    index[str(i+1)].remove(chosen)
+
+                    outname = self.surfacename + str('_no') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
+                        maxmole) + str('_d') + str(int(np.ceil(self.mindistlis[chosen]/0.5)-3)) + '_random.traj'
+                    print(outname)
+                    outpath = initpath + str(outname)
+                    self.allatoms[chosen].write(outpath)
+
+                else:
+                    break
             self.numbaredadsites

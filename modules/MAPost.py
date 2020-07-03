@@ -67,6 +67,26 @@ def get_adsorb_distance(atoms, adsorbate):
     return maxdist
 
 
+def check_if_not_moved(name):
+    ini = init_query(name)
+    baresurface, inipos = remove_adsorbate(ini, 'C')
+    struct = AseAtomsAdaptor.get_structure(baresurface)
+    frinisites = struct.lattice.get_fractional_coords(inipos)
+    modfrinisites = adjust_possitions(frinisites)
+
+    fin = query(name)
+    baresurface, finpos = remove_adsorbate(fin, 'C')
+    struct = AseAtomsAdaptor.get_structure(baresurface)
+    frfinsites = struct.lattice.get_fractional_coords(finpos)
+    modfrfinsites = adjust_possitions(frfinsites)
+    
+    distlislis = struct.lattice.get_all_distances(modfrinisites, modfrfinsites)
+    for distlis in distlislis:
+        if np.min(distlis) > 1.2:
+            return False
+    return True
+
+
 def get_adsorbates_position_info(file, flag=0):
     '''
     if flag == 0 then calc both init and relaxed
@@ -325,7 +345,7 @@ class make_database():
         ### judge valid or not ###
         converged = np.max(np.abs(self.ratoms.get_forces())) < 0.03
         is_adsorbed = get_adsorb_distance(self.ratoms, adsatoms) < 3.0
-        kept_sites = igroups == rgroups
+        kept_sites = (igroups == rgroups) and (check_if_not_moved(self.filename))
         E_not_exceeded = ((totaladsene/tot < 2.0) and (totaladsene/tot > -2.0))
         if converged and is_adsorbed and kept_sites and E_not_exceeded:
             isvalid = True
