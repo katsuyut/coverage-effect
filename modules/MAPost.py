@@ -25,32 +25,6 @@ import statsmodels.api as sm
 databasepath = os.environ['DATABASEPATH']
 initpath = os.environ['INITPATH']
 
-# def get_maximum_movement(file):
-#     '''
-#     Using adjust_positions from MAInit to avoid the pbc problem
-#     '''
-#     file = file.split('.traj')[0]
-#     file = file + '_all.traj'
-#     path = databasepath + file
-#     traj = Trajectory(path)
-
-#     initpos = traj[-1].positions
-#     postpos = traj[0].positions
-
-#     # struct = AseAtomsAdaptor.get_structure(ibareatoms)
-#     # initpos = struct.lattice.get_fractional_coords(initpos)
-#     # postpos = struct.lattice.get_fractional_coords(postpos)
-
-#     initpos = adjust_possitions(initpos)
-#     postpos = adjust_possitions(postpos)
-
-#     # initpos = struct.lattice.get_cartesian_coords(initpos)
-#     # postpos = struct.lattice.get_cartesian_coords(postpos)
-
-#     diff = abs(np.array(initpos) - np.array(postpos))
-#     maxdiff = np.max(diff)
-
-#     return maxdiff
 
 def get_adsorb_distance(atoms, adsorbate):
     '''
