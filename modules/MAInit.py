@@ -605,7 +605,7 @@ class make_adsorbed_surface():
                     index[str(i+1)].remove(chosen)
 
                     outname = self.surfacename + str('_no') + str('{0:03d}'.format(chosen+1)) + '_CO_n' + str(
-                        maxmole) + str('_d') + str(int(np.ceil(self.mindistlis[chosen]/0.5)-3)) + '_random.traj'
+                        maxmole) + str('_d') + str(int(np.ceil(self.mindistlis[chosen]/0.5)-3)) + '.traj'
                     print(outname)
                     outpath = initpath + str(outname)
                     self.allatoms[chosen].write(outpath)
