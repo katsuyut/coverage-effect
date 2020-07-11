@@ -21,6 +21,8 @@ from MAInit import *
 from pymongo import MongoClient
 from sklearn.linear_model import LinearRegression
 import statsmodels.api as sm
+from mendeleev import element
+
 
 databasepath = os.environ['DATABASEPATH']
 initpath = os.environ['INITPATH']
@@ -171,6 +173,11 @@ def get_coordination_matrix(atoms, expression=2):
                     for cindex in cindexes:
                         b_mat[atom.index][cindex] = 1/len(cindexes)
                         b_mat[cindex][atom.index] = 1/len(cindexes)
+                elif expression == 'GNN': # in this case, number is just a categorical value
+                    for cindex in cindexes:
+                        b_mat[atom.index][cindex] = len(cindexes)
+                        b_mat[cindex][atom.index] = len(cindexes)
+
             else:
                 nn_info = vnn_loose.get_nn_info(struct, n=atom.index)
                 coordination, cindexes = __get_coordination_string_mod(nn_info)
@@ -182,6 +189,9 @@ def get_coordination_matrix(atoms, expression=2):
                     for cindex in cindexes:
                         b_mat[atom.index][cindex] = 1/len(cindexes)
                         b_mat[cindex][atom.index] = 1/len(cindexes)
+                elif expression == 'GNN':
+                    for cindex in cindexes:
+                        b_mat[atom.index][cindex] += 1
 
         return b_mat, nads
 
@@ -547,3 +557,96 @@ class dataset_utilizer():
         y_pred = Lin.predict(X)
         slope2, slope3 = Lin.coef_
         return y_pred, slope2, slope3
+
+
+def get_edge_index_and_feature_and_filter(atoms, adsatoms, expression='notOH'):
+    adseles = get_all_elements(adsatoms)
+    baresurface, adsites = remove_adsorbate(atoms, adseles)
+    b_mat, nads = get_coordination_matrix(atoms, expression='GNN')
+    nads = len(adsites)
+
+    features = []
+#     ads_features.append(b_mat[-1,:-1])
+    
+    ads_info = b_mat[-nads:,:-nads]
+    b_mat = b_mat[:-nads,:-nads]
+    
+    a = []
+    b = []
+    for i in range(len(b_mat)):
+        for j in range(len(b_mat)):
+            for k in range(int(b_mat[i,j])):
+                a.append(i)
+                b.append(j)
+    edge_index = np.array([a,b])
+    
+    surf_filter = []
+    
+    i = 0
+    for atom in baresurface:
+        # atom info
+        feature = []
+        inst = element(atom.symbol)
+        feature.append(inst.dipole_polarizability)
+        feature.append(inst.density)
+        feature.append(inst.lattice_constant)
+        feature.append(inst.vdw_radius_uff)
+
+    #     tmp.append(inst.group_id)
+    #     tmp.append(inst.period)
+        feature.append(inst.en_pauling)
+        feature.append(inst.covalent_radius_cordero)
+        feature.append(inst.nvalence())
+    #     tmp.append(inst.ionenergies[1])
+        feature.append(inst.electron_affinity)
+    #     tmp.append('block')
+    #     tmp.append(inst.atomic_volume)
+    
+        # adsorbate info
+        if expression != 'OH':
+            ads_feature = [0,0,0] # # of T, B, H adsorbates
+            ads_feature[0] += np.count_nonzero(ads_info[:,i]==1) # Top
+            ads_feature[1] += np.count_nonzero(ads_info[:,i]==2) # Bridge
+            ads_feature[2] += np.count_nonzero(ads_info[:,i]==3) # Hollow
+            ads_feature[2] += np.count_nonzero(ads_info[:,i]==4) # Hollow
+    
+            feature = feature + ads_feature
+            features.append(feature)
+        else:
+            ads_feature = [0,0,0] # # of T, B, H adsorbates
+            ads_feature[0] += np.count_nonzero(ads_info[:,i]==1) # Top
+            ads_feature[1] += np.count_nonzero(ads_info[:,i]==2) # Bridge
+            ads_feature[2] += np.count_nonzero(ads_info[:,i]==3) # Hollow
+            ads_feature[2] += np.count_nonzero(ads_info[:,i]==4) # Hollow
+            
+            ads_feature_ = [0,0,0,0,0,0,0] # # of T=1, B=1, B=2, H=1,H=2,H=3,H=4 adsorbates
+            if ads_feature[0] == 1:
+                ads_feature_[0] = 1
+            elif ads_feature[1] == 1:
+                ads_feature_[1] = 1
+            elif ads_feature[1] == 2:
+                ads_feature_[2] = 1
+            elif ads_feature[2] == 1:
+                ads_feature_[3] = 1
+            elif ads_feature[2] == 2:
+                ads_feature_[4] = 1
+            elif ads_feature[2] == 3:
+                ads_feature_[5] = 1
+            elif ads_feature[2] == 4:
+                ads_feature_[6] = 1
+    
+            feature = feature + ads_feature_
+            features.append(feature)
+
+        # filter
+        if atom.tag == 1:
+            surf_filter.append(1)
+        else:
+            surf_filter.append(0)
+        
+        i += 1
+    
+    
+    features = np.array(features)
+    surf_filter = np.array(surf_filter)
+    return edge_index, features, surf_filter

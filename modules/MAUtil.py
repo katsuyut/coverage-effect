@@ -46,6 +46,7 @@ def init_query(name, env='spacom'):
 
 def cif_query(name, env='spacom'):
     path = mppath + name
+    print(path)
     try:
         atoms = read(path)
         if env == 'local':
